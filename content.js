@@ -2,7 +2,8 @@
   if (window.__nyaaSmartSearchLoaded) return;
   window.__nyaaSmartSearchLoaded = true;
 
-  const BUILTIN_TAGS = [
+  // Built-in autocomplete hints ONLY for nyaa.si / nyaa.land
+  const NYAA_BUILTIN_TAGS = [
     { text: "[SubsPlease] 1080p", desc: "Релизы SubsPlease в 1080p" },
     { text: "[SubsPlease]", desc: "Релиз-группа онгоингов (CR/HIDIVE)" },
     { text: "[Erai-raws]", desc: "Мульти-субтитры и HEVC" },
@@ -20,9 +21,24 @@
     { text: "-chinese", desc: "Исключить китайские переводы" }
   ];
 
-  let state = {
-    enabledDomains: ["nyaa.si", "nyaa.land", "sukebei.nyaa.si", "nhentai.net"],
+  const NYAA_DEFAULT_PROFILE = {
     chips: ["[SubsPlease]", "1080p", "HEVC", "Batch", "10bit", "[Erai-raws]", "Dual Audio", "-chinese"],
+    favorites: [
+      { id: "fav_default_1", text: "[SubsPlease] 1080p", category: "1_2", filter: "0", addedAt: 1700000000000 },
+      { id: "fav_default_2", text: "[SubsPlease]", category: "", filter: "", addedAt: 1700000000001 },
+      { id: "fav_default_3", text: "[Erai-raws] 1080p HEVC", category: "", filter: "", addedAt: 1700000000002 },
+      { id: "fav_default_4", text: "1080p Batch", category: "", filter: "", addedAt: 1700000000003 }
+    ],
+    history: [
+      { id: "hist_default_1", text: "[SubsPlease] Solo Leveling 1080p", count: 8, lastUsed: 1700000005000 },
+      { id: "hist_default_2", text: "[SubsPlease] Frieren 1080p", count: 5, lastUsed: 1700000004000 }
+    ]
+  };
+
+  let state = {
+    enabledDomains: ["nyaa.si", "nyaa.land", "sukebei.nyaa.si"],
+    siteProfiles: {},
+    chips: [],
     favorites: [],
     history: [],
     customSelectors: {},
@@ -42,7 +58,19 @@
   let dragSrcIndex = null;
 
   function getCleanHostname() {
-    return location.hostname.replace(/^www\./, "");
+    return location.hostname.replace(/^www\./, "").toLowerCase();
+  }
+
+  function getProfileKey() {
+    const host = getCleanHostname();
+    if (host === "nyaa.si" || host === "nyaa.land" || host.endsWith(".nyaa.si") || host.endsWith(".nyaa.land")) {
+      return "nyaa.si";
+    }
+    return host;
+  }
+
+  function isNyaaSite() {
+    return getProfileKey() === "nyaa.si";
   }
 
   function isSiteEnabled() {
@@ -53,16 +81,42 @@
   async function loadState() {
     const data = await chrome.storage.local.get([
       "enabledDomains",
+      "siteProfiles",
       "chips",
       "favorites",
       "history",
       "customSelectors"
     ]);
     if (data.enabledDomains) state.enabledDomains = data.enabledDomains;
-    if (data.chips) state.chips = data.chips;
-    if (data.favorites) state.favorites = data.favorites;
-    if (data.history) state.history = data.history;
     if (data.customSelectors) state.customSelectors = data.customSelectors;
+
+    const profiles = data.siteProfiles || {};
+    if (!profiles["nyaa.si"]) {
+      profiles["nyaa.si"] = {
+        chips: Array.isArray(data.chips) ? data.chips : [...NYAA_DEFAULT_PROFILE.chips],
+        favorites: Array.isArray(data.favorites) ? data.favorites : [...NYAA_DEFAULT_PROFILE.favorites],
+        history: Array.isArray(data.history) ? data.history : [...NYAA_DEFAULT_PROFILE.history]
+      };
+    }
+    state.siteProfiles = profiles;
+
+    const key = getProfileKey();
+    const currentProfile = profiles[key] || { chips: [], favorites: [], history: [] };
+    state.chips = Array.isArray(currentProfile.chips) ? currentProfile.chips : [];
+    state.favorites = Array.isArray(currentProfile.favorites) ? currentProfile.favorites : [];
+    state.history = Array.isArray(currentProfile.history) ? currentProfile.history : [];
+  }
+
+  async function saveCurrentProfile() {
+    const key = getProfileKey();
+    const { siteProfiles = {} } = await chrome.storage.local.get(["siteProfiles"]);
+    siteProfiles[key] = {
+      chips: state.chips,
+      favorites: state.favorites,
+      history: state.history
+    };
+    state.siteProfiles = siteProfiles;
+    await chrome.storage.local.set({ siteProfiles });
   }
 
   function findSearchInput() {
@@ -113,6 +167,7 @@
   }
 
   function getNyaaSelects() {
+    if (!isNyaaSite()) return { category: "", filter: "" };
     const catSelect = document.querySelector('select[name="c"]');
     const filterSelect = document.querySelector('select[name="f"]');
     return {
@@ -122,7 +177,7 @@
   }
 
   function applyNyaaSelects(item) {
-    if (!item) return;
+    if (!item || !isNyaaSite()) return;
     if (item.category) {
       const catSelect = document.querySelector('select[name="c"]');
       if (catSelect) {
@@ -143,7 +198,7 @@
     const clean = (queryText || "").trim().replace(/\s+/g, " ");
     if (clean.length < 2) return;
 
-    const { history = [] } = await chrome.storage.local.get(["history"]);
+    const history = [...state.history];
     const idx = history.findIndex(h => h.text.toLowerCase() === clean.toLowerCase());
     if (idx >= 0) {
       history[idx].count = (history[idx].count || 1) + 1;
@@ -158,9 +213,8 @@
       });
     }
     history.sort((a, b) => (b.count || 1) - (a.count || 1) || (b.lastUsed || 0) - (a.lastUsed || 0));
-    const trimmed = history.slice(0, 50);
-    state.history = trimmed;
-    await chrome.storage.local.set({ history: trimmed });
+    state.history = history.slice(0, 50);
+    await saveCurrentProfile();
   }
 
   async function submitSearch(queryText, itemMeta = null) {
@@ -185,10 +239,10 @@
     }
   }
 
-  async function toggleFavorite(queryText, note = "") {
+  async function toggleFavorite(queryText) {
     const clean = (queryText || "").trim().replace(/\s+/g, " ");
     if (!clean) return;
-    const { favorites = [] } = await chrome.storage.local.get(["favorites"]);
+    const favorites = [...state.favorites];
     const idx = favorites.findIndex(f => f.text.toLowerCase() === clean.toLowerCase());
     if (idx >= 0) {
       favorites.splice(idx, 1);
@@ -197,14 +251,13 @@
       favorites.unshift({
         id: "fav_" + Date.now(),
         text: clean,
-        note: note || "",
         category: selects.category,
         filter: selects.filter,
         addedAt: Date.now()
       });
     }
     state.favorites = favorites;
-    await chrome.storage.local.set({ favorites });
+    await saveCurrentProfile();
     updateInbarButtons();
     renderDropdown();
   }
@@ -478,7 +531,7 @@
           border-color: #888;
         }
 
-        /* Top Search For bar (Screenshot 8 exact style) */
+        /* Top Search For bar */
         .search-for-row {
           display: flex;
           align-items: stretch;
@@ -510,7 +563,7 @@
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        /* Rows (Screenshot 9 clean style without GROUP/TAG badges) */
+        /* Rows */
         .nh-row {
           display: flex;
           align-items: stretch;
@@ -575,7 +628,6 @@
           padding-left: 8px;
           flex-shrink: 0;
         }
-        /* Right-side square action cells like on nhentai */
         .nh-cell-action {
           width: 36px;
           display: flex;
@@ -737,17 +789,17 @@
 
     let html = "";
 
-    // 1. Quick Tag Chips Bar
+    // 1. Per-site Quick Tag Chips Bar (only displays this site's chips + "+ тег" button)
     html += `<div class="chips-bar">
-      <span class="chips-label">Теги:</span>`;
+      <span class="chips-label">Теги (${escapeHtml(getProfileKey())}):</span>`;
     for (const chip of state.chips) {
       const isActive = new RegExp(`(^|\\s)${chip.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=\\s|$)`, "i").test(trimmedVal);
-      html += `<button type="button" class="chip-btn ${isActive ? "active" : ""}" data-chip="${escapeHtml(chip)}" title="Клик: добавить или убрать тег из строки">${escapeHtml(chip)}</button>`;
+      html += `<button type="button" class="chip-btn ${isActive ? "active" : ""}" data-chip="${escapeHtml(chip)}" title="ЛКМ: добавить/убрать тег | ПКМ: удалить тег с этого сайта">${escapeHtml(chip)}</button>`;
     }
-    html += `<button type="button" class="chip-add-btn" id="nh-add-chip" title="Добавить свой быстрый тег-чипс">+ тег</button>
+    html += `<button type="button" class="chip-add-btn" id="nh-add-chip" title="Добавить свой быстрый тег для этого сайта">+ тег</button>
     </div>`;
 
-    // 2. If user typed something, show "↵ Search for <query>" with ★ button on right (Screenshot 8 style)
+    // 2. If user typed something, show "↵ Search for <query>" with ★ button on right
     if (trimmedVal.length > 0) {
       const favActive = isFavorited(trimmedVal);
       html += `
@@ -757,14 +809,14 @@
             <span>Search for</span>
             <span class="search-for-query">${escapeHtml(trimmedVal)}</span>
           </div>
-          <div class="nh-cell-action star-cell ${favActive ? "active" : ""}" data-action="star-current" title="Сохранить в Избранное (★)">
+          <div class="nh-cell-action star-cell ${favActive ? "active" : ""}" data-action="star-current" title="Сохранить в Избранное этого сайта (★)">
             ${favActive ? "★" : "☆"}
           </div>
         </div>
       `;
     }
 
-    // 3. Filter Favorites (Saved) - Clean style like Screenshot 9 (no GROUP/TAG badges)
+    // 3. Per-site Favorites (Saved)
     const filteredFavs = lowerVal
       ? state.favorites.filter(f => f.text.toLowerCase().includes(lowerVal))
       : state.favorites;
@@ -813,7 +865,7 @@
       `;
     }
 
-    // 4. Filter History (Recent / Frequent)
+    // 4. Per-site History (Recent / Frequent)
     const favSet = new Set(state.favorites.map(f => f.text.trim().toLowerCase()));
     const filteredHist = state.history.filter(h => {
       if (lowerVal && !h.text.toLowerCase().includes(lowerVal)) return false;
@@ -831,7 +883,7 @@
           <div class="nh-cell-main" data-action="run-query" data-query="${escapeHtml(item.text)}">
             <span class="nh-clock-icon">🕒</span>
             <span class="nh-text ${isBracketed ? "mono" : ""}">${escapeHtml(item.text)}</span>
-            <span class="nh-count" title="Сколько раз вы искали этот запрос">${item.count || 1}×</span>
+            <span class="nh-count" title="Сколько раз вы искали этот запрос на этом сайте">${item.count || 1}×</span>
           </div>
           <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(item.text)}" title="Подставить в строку (→)">→</div>
           <div class="nh-cell-action star-cell ${isFav ? "active" : ""}" data-action="promote-hist" data-query="${escapeHtml(item.text)}" title="Перенести в Избранное (☆)">
@@ -852,13 +904,13 @@
       `;
     }
 
-    // 5. Built-in Tag / Release Group Suggestions when typing (without GROUP/TAG badges)
-    if (lowerVal.length > 0) {
+    // 5. Built-in Tag / Release Group Suggestions ONLY on nyaa.si / nyaa.land
+    if (lowerVal.length > 0 && isNyaaSite()) {
       const existingTexts = new Set([
         ...visibleFavs.map(f => f.text.toLowerCase()),
         ...visibleHist.map(h => h.text.toLowerCase())
       ]);
-      const matchingTags = BUILTIN_TAGS.filter(t =>
+      const matchingTags = NYAA_BUILTIN_TAGS.filter(t =>
         !existingTexts.has(t.text.toLowerCase()) &&
         (t.text.toLowerCase().includes(lowerVal) || t.desc.toLowerCase().includes(lowerVal))
       );
@@ -902,12 +954,12 @@
     if (addChipBtn) {
       addChipBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const newChip = prompt("Введите новый быстрый тег-чипс (например, [Judas] или FLAC):");
+        const newChip = prompt(`Введите новый быстрый тег-чипс для сайта ${getProfileKey()}:`);
         if (newChip && newChip.trim()) {
           const clean = newChip.trim();
           if (!state.chips.includes(clean)) {
             state.chips.push(clean);
-            await chrome.storage.local.set({ chips: state.chips });
+            await saveCurrentProfile();
             renderDropdown();
           }
         }
@@ -919,9 +971,9 @@
         e.preventDefault();
         e.stopPropagation();
         const chip = btn.dataset.chip;
-        if (confirm(`Удалить чипс «${chip}» с панели?`)) {
+        if (confirm(`Удалить чипс «${chip}» для сайта ${getProfileKey()}?`)) {
           state.chips = state.chips.filter(c => c !== chip);
-          await chrome.storage.local.set({ chips: state.chips });
+          await saveCurrentProfile();
           renderDropdown();
         }
       });
@@ -957,7 +1009,7 @@
             const idx = state.favorites.findIndex(f => f.id === id);
             if (idx >= 0) {
               state.favorites[idx].text = textInp.value.trim();
-              await chrome.storage.local.set({ favorites: state.favorites });
+              await saveCurrentProfile();
             }
           }
           state.editingId = null;
@@ -965,7 +1017,7 @@
         } else if (action === "delete-fav") {
           const id = el.dataset.id;
           state.favorites = state.favorites.filter(f => f.id !== id);
-          await chrome.storage.local.set({ favorites: state.favorites });
+          await saveCurrentProfile();
           updateInbarButtons();
           renderDropdown();
         } else if (action === "toggle-more-saved") {
@@ -973,18 +1025,18 @@
           renderDropdown();
         } else if (action === "add-new-fav") {
           const newFavId = "fav_" + Date.now();
-          const initialText = (activeInput && activeInput.value.trim()) || "[SubsPlease] ";
+          const defaultPlaceholder = isNyaaSite() ? "[SubsPlease] " : "";
+          const initialText = (activeInput && activeInput.value.trim()) || defaultPlaceholder;
           state.favorites.unshift({
             id: newFavId,
             text: initialText,
-            note: "",
             category: "",
             filter: "",
             addedAt: Date.now()
           });
           state.editingId = newFavId;
           state.showAllSaved = true;
-          await chrome.storage.local.set({ favorites: state.favorites });
+          await saveCurrentProfile();
           renderDropdown();
           const inp = dropdownEl.querySelector(`#edit-text-${newFavId}`);
           if (inp) inp.focus();
@@ -993,14 +1045,14 @@
         } else if (action === "delete-hist") {
           const id = el.dataset.id;
           state.history = state.history.filter(h => h.id !== id);
-          await chrome.storage.local.set({ history: state.history });
+          await saveCurrentProfile();
           renderDropdown();
         } else if (action === "toggle-more-recent") {
           state.showAllRecent = !state.showAllRecent;
           renderDropdown();
         } else if (action === "clear-all-hist") {
           state.history = [];
-          await chrome.storage.local.set({ history: [] });
+          await saveCurrentProfile();
           renderDropdown();
         }
       });
@@ -1022,7 +1074,7 @@
         if (dragSrcIndex !== null && dragSrcIndex !== targetIdx) {
           const moved = state.favorites.splice(dragSrcIndex, 1)[0];
           state.favorites.splice(targetIdx, 0, moved);
-          await chrome.storage.local.set({ favorites: state.favorites });
+          await saveCurrentProfile();
           renderDropdown();
         }
       });

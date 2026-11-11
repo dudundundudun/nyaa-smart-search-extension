@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Smart Search Favorites & Bar (nyaa.si Edition)",
-  "version": "1.1.0",
-  "description": "Выпадающее меню избранных и частых запросов в стиле nhentai, кнопки быстрой очистки (× и ⌫) и чипсы тегов специально для nyaa.si и выбранных сайтов.",
+  "version": "1.2.0",
+  "description": "Выпадающее меню избранных и частых запросов в стиле nhentai, кнопки быстрой очистки (× и ⌫) и отдельные базы тегов и фаворитов для каждого сайта.",
   "permissions": [
     "storage",
     "unlimitedStorage",

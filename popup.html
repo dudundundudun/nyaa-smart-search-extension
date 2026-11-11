@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Search Favorites</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      width: 340px;
+      background: #1a1a1a;
+      color: #e5e5e5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: #242424;
+      border-bottom: 1px solid #333;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+    }
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ed2553;
+      box-shadow: 0 0 8px #ed2553;
+    }
+    .section {
+      padding: 12px 14px;
+      border-bottom: 1px solid #2c2c2c;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .domain-label {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #fff;
+      word-break: break-all;
+    }
+    .sub-label {
+      font-size: 11.5px;
+      color: #999;
+      margin-top: 2px;
+    }
+    /* Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #3f3f46;
+      transition: .2s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2ea043;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    .btn-full {
+      width: 100%;
+      background: #2b2b2b;
+      color: #ddd;
+      border: 1px solid #3f3f3f;
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-size: 12.5px;
+      cursor: pointer;
+      margin-top: 8px;
+      text-align: center;
+      transition: background 0.12s;
+    }
+    .btn-full:hover {
+      background: #383838;
+      color: #fff;
+    }
+    .fav-preview {
+      max-height: 150px;
+      overflow-y: auto;
+      margin-top: 8px;
+      border: 1px solid #2e2e2e;
+      border-radius: 4px;
+      background: #141414;
+    }
+    .fav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-bottom: 1px solid #242424;
+      font-size: 12px;
+    }
+    .fav-item:last-child {
+      border-bottom: none;
+    }
+    .fav-star {
+      color: #f5b942;
+      margin-right: 5px;
+    }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .status-msg {
+      font-size: 11.5px;
+      color: #4ade80;
+      margin-top: 6px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span>Smart Search Bar</span>
+    </div>
+    <span style="font-size:11px;color:#888;">Manifest V3</span>
+  </div>
+
+  <div class="section">
+    <div class="toggle-row">
+      <div>
+        <div class="domain-label" id="current-domain">nyaa.si</div>
+        <div class="sub-label" id="domain-status">Активно на этом сайте</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="site-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <button class="btn-full" id="pick-input-btn">🎯 Указать строку поиска кликом</button>
+  </div>
+
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-weight:600;color:#ccc;">★ Ваши фавориты (<span id="fav-count">0</span>)</span>
+      <span style="font-size:11px;color:#f5b942;cursor:pointer;" id="reset-subsplease">+ [SubsPlease] 1080p</span>
+    </div>
+    <div class="fav-preview" id="fav-list"></div>
+  </div>
+
+  <div class="section" style="border-bottom:none;">
+    <div style="font-weight:600;color:#ccc;margin-bottom:4px;">Резервная копия базы (.json)</div>
+    <div class="actions-grid">
+      <button class="btn-full" id="export-btn" style="margin-top:4px;">⬇ Экспорт</button>
+      <button class="btn-full" id="import-btn" style="margin-top:4px;">⬆ Импорт</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none;">
+    <div class="status-msg" id="status-msg">Сохранено!</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

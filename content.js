@@ -2,49 +2,21 @@
   if (window.__nyaaSmartSearchLoaded) return;
   window.__nyaaSmartSearchLoaded = true;
 
-  // Built-in autocomplete hints ONLY for nyaa.si / nyaa.land
-  const NYAA_BUILTIN_TAGS = [
-    { text: "[SubsPlease] 1080p", desc: "Релизы SubsPlease в 1080p" },
-    { text: "[SubsPlease]", desc: "Релиз-группа онгоингов (CR/HIDIVE)" },
-    { text: "[Erai-raws]", desc: "Мульти-субтитры и HEVC" },
-    { text: "[EMBER]", desc: "Компактные HEVC 10bit 1080p encodes" },
-    { text: "[Judas]", desc: "Сезонные батчи и фильмы в HEVC 10bit" },
-    { text: "[SubsPlease] Batch", desc: "Полные паки сезонов от SubsPlease" },
-    { text: "1080p", desc: "Full HD (1920×1080)" },
-    { text: "720p", desc: "HD (1280×720)" },
-    { text: "2160p", desc: "4K UHD" },
-    { text: "HEVC", desc: "Кодек H.265 / x265" },
-    { text: "10bit", desc: "Глубина цвета 10 бит" },
-    { text: "Batch", desc: "Весь сезон целиком" },
-    { text: "Dual Audio", desc: "Японская + английская дорожки" },
-    { text: "BD", desc: "Blu-ray рипы" },
-    { text: "-chinese", desc: "Исключить китайские переводы" }
-  ];
-
-  const NYAA_DEFAULT_PROFILE = {
-    chips: ["[SubsPlease]", "1080p", "HEVC", "Batch", "10bit", "[Erai-raws]", "Dual Audio", "-chinese"],
-    favorites: [
-      { id: "fav_default_1", text: "[SubsPlease] 1080p", category: "1_2", filter: "0", addedAt: 1700000000000 },
-      { id: "fav_default_2", text: "[SubsPlease]", category: "", filter: "", addedAt: 1700000000001 },
-      { id: "fav_default_3", text: "[Erai-raws] 1080p HEVC", category: "", filter: "", addedAt: 1700000000002 },
-      { id: "fav_default_4", text: "1080p Batch", category: "", filter: "", addedAt: 1700000000003 }
-    ],
-    history: [
-      { id: "hist_default_1", text: "[SubsPlease] Solo Leveling 1080p", count: 8, lastUsed: 1700000005000 },
-      { id: "hist_default_2", text: "[SubsPlease] Frieren 1080p", count: 5, lastUsed: 1700000004000 }
-    ]
-  };
-
   let state = {
-    enabledDomains: ["nyaa.si", "nyaa.land", "sukebei.nyaa.si"],
+    enabledDomains: ["nyaa.si", "nyaa.land", "sukebei.nyaa.si", "nhentai.net", "exhentai.org", "e-hentai.org", "danbooru.donmai.us", "gelbooru.com"],
     siteProfiles: {},
     chips: [],
     favorites: [],
     history: [],
     customSelectors: {},
+    settings: { pageTagHover: true },
+    customTagDatabase: [],
+    builtinTagDb: null,
     showAllSaved: false,
     showAllRecent: false,
     editingId: null,
+    addingChipInline: false,
+    activeNsFilter: "",
     pickingElement: false
   };
 
@@ -52,10 +24,16 @@
   let hostEl = null;
   let shadow = null;
   let dropdownEl = null;
+  let chipsContainer = null;
+  let resultsContainer = null;
   let inbarHost = null;
   let inbarShadow = null;
+  let hoverPillHost = null;
+  let hoverPillShadow = null;
+  let hoveredTagText = "";
   let isDropdownOpen = false;
   let dragSrcIndex = null;
+  let searchDebounceTimer = null;
 
   function getCleanHostname() {
     return location.hostname.replace(/^www\./, "").toLowerCase();
@@ -66,7 +44,18 @@
     if (host === "nyaa.si" || host === "nyaa.land" || host.endsWith(".nyaa.si") || host.endsWith(".nyaa.land")) {
       return "nyaa.si";
     }
+    if (host === "e-hentai.org" || host === "exhentai.org" || host.endsWith(".e-hentai.org") || host.endsWith(".exhentai.org")) {
+      return "exhentai.org";
+    }
     return host;
+  }
+
+  function getSiteCategory() {
+    const key = getProfileKey();
+    if (key === "nyaa.si" || key.includes("sukebei")) return "nyaa";
+    if (key.includes("exhentai") || key.includes("e-hentai") || key.includes("nhentai")) return "hentai";
+    if (key.includes("booru")) return "booru";
+    return "all";
   }
 
   function isNyaaSite() {
@@ -78,28 +67,48 @@
     return (state.enabledDomains || []).some(d => host === d || host.endsWith("." + d));
   }
 
+  async function ensureBuiltinTagDb() {
+    if (state.builtinTagDb) return state.builtinTagDb;
+    try {
+      const url = chrome.runtime.getURL("data/tags_db.json");
+      const resp = await fetch(url);
+      state.builtinTagDb = await resp.json();
+    } catch (e) {
+      state.builtinTagDb = { nyaa: [], booru: [], hentai: [] };
+    }
+    return state.builtinTagDb;
+  }
+
+  function getActiveTagPool() {
+    const db = state.builtinTagDb || { nyaa: [], booru: [], hentai: [] };
+    const cat = getSiteCategory();
+    let pool = [];
+    if (cat === "nyaa") pool = [...(db.nyaa || [])];
+    else if (cat === "hentai") pool = [...(db.hentai || []), ...(db.booru || [])];
+    else if (cat === "booru") pool = [...(db.booru || []), ...(db.hentai || [])];
+    else pool = [...(db.nyaa || []), ...(db.hentai || []), ...(db.booru || [])];
+
+    if (Array.isArray(state.customTagDatabase) && state.customTagDatabase.length > 0) {
+      pool = [...state.customTagDatabase, ...pool];
+    }
+    return pool;
+  }
+
   async function loadState() {
     const data = await chrome.storage.local.get([
       "enabledDomains",
       "siteProfiles",
-      "chips",
-      "favorites",
-      "history",
-      "customSelectors"
+      "customSelectors",
+      "settings",
+      "customTagDatabase"
     ]);
     if (data.enabledDomains) state.enabledDomains = data.enabledDomains;
     if (data.customSelectors) state.customSelectors = data.customSelectors;
+    if (data.settings) state.settings = data.settings;
+    if (Array.isArray(data.customTagDatabase)) state.customTagDatabase = data.customTagDatabase;
 
     const profiles = data.siteProfiles || {};
-    if (!profiles["nyaa.si"]) {
-      profiles["nyaa.si"] = {
-        chips: Array.isArray(data.chips) ? data.chips : [...NYAA_DEFAULT_PROFILE.chips],
-        favorites: Array.isArray(data.favorites) ? data.favorites : [...NYAA_DEFAULT_PROFILE.favorites],
-        history: Array.isArray(data.history) ? data.history : [...NYAA_DEFAULT_PROFILE.history]
-      };
-    }
     state.siteProfiles = profiles;
-
     const key = getProfileKey();
     const currentProfile = profiles[key] || { chips: [], favorites: [], history: [] };
     state.chips = Array.isArray(currentProfile.chips) ? currentProfile.chips : [];
@@ -128,6 +137,8 @@
     const selectors = [
       'input.search-bar[name="q"]',
       'input[name="q"]',
+      'input[name="f_search"]',
+      'input[name="tags"]',
       'input[type="search"]',
       'input[name="search"]',
       'input[name="query"]',
@@ -144,12 +155,9 @@
 
   function setInputValue(input, val, focus = true) {
     if (!input) return;
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      "value"
-    )?.set;
-    if (nativeInputValueSetter) {
-      nativeInputValueSetter.call(input, val);
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    if (nativeSetter) {
+      nativeSetter.call(input, val);
     } else {
       input.value = val;
     }
@@ -158,12 +166,58 @@
     if (focus) {
       input.focus();
       const len = val.length;
-      try {
-        input.setSelectionRange(len, len);
-      } catch (e) {}
+      try { input.setSelectionRange(len, len); } catch (e) {}
     }
     updateInbarButtons();
-    renderDropdown();
+    renderChipsSection();
+    renderResultsSection();
+  }
+
+  // Extract last token (after last space outside quotes, or simply last space-separated fragment)
+  function getCurrentTokenInfo(val) {
+    const str = String(val || "");
+    const lastSpace = str.lastIndexOf(" ");
+    const prefix = lastSpace >= 0 ? str.slice(0, lastSpace + 1) : "";
+    const token = lastSpace >= 0 ? str.slice(lastSpace + 1) : str;
+    return { prefix, token };
+  }
+
+  function replaceLastTokenWith(tagText) {
+    if (!activeInput) return;
+    const val = activeInput.value || "";
+    const { prefix } = getCurrentTokenInfo(val);
+    const formatted = tagText.includes(" ") && !tagText.startsWith("[") && !tagText.startsWith('"') && !tagText.startsWith("-")
+      ? (getSiteCategory() === "hentai" && tagText.includes(":") ? `${tagText.split(":")[0]}:"${tagText.split(":")[1]}$"` : `"${tagText}"`)
+      : tagText;
+    const nextVal = (prefix + formatted).trimEnd() + (tagText.endsWith(":") ? "" : " ");
+    setInputValue(activeInput, nextVal, true);
+    openDropdown();
+  }
+
+  function wrapLastTokenWithQuotes() {
+    if (!activeInput) return;
+    const trimmed = (activeInput.value || "").trimEnd();
+    if (!trimmed) return;
+    const { prefix, token } = getCurrentTokenInfo(trimmed);
+    if (!token) return;
+    const nextToken = token.startsWith('"') && token.endsWith('"') ? token.slice(1, -1) : `"${token}"`;
+    setInputValue(activeInput, prefix + nextToken + " ", true);
+  }
+
+  function negateLastToken() {
+    if (!activeInput) return;
+    const trimmed = (activeInput.value || "").trimEnd();
+    if (!trimmed) {
+      setInputValue(activeInput, "-", true);
+      return;
+    }
+    const { prefix, token } = getCurrentTokenInfo(trimmed);
+    if (!token) {
+      setInputValue(activeInput, prefix + "-", true);
+      return;
+    }
+    const nextToken = token.startsWith("-") ? token.slice(1) : "-" + token;
+    setInputValue(activeInput, prefix + nextToken + " ", true);
   }
 
   function getNyaaSelects() {
@@ -197,7 +251,6 @@
   async function recordQueryToHistory(queryText) {
     const clean = (queryText || "").trim().replace(/\s+/g, " ");
     if (clean.length < 2) return;
-
     const history = [...state.history];
     const idx = history.findIndex(h => h.text.toLowerCase() === clean.toLowerCase());
     if (idx >= 0) {
@@ -205,28 +258,30 @@
       history[idx].lastUsed = Date.now();
       history[idx].text = clean;
     } else {
-      history.unshift({
-        id: "hist_" + Date.now(),
-        text: clean,
-        count: 1,
-        lastUsed: Date.now()
-      });
+      history.unshift({ id: "hist_" + Date.now(), text: clean, count: 1, lastUsed: Date.now() });
     }
     history.sort((a, b) => (b.count || 1) - (a.count || 1) || (b.lastUsed || 0) - (a.lastUsed || 0));
     state.history = history.slice(0, 50);
     await saveCurrentProfile();
   }
 
-  async function submitSearch(queryText, itemMeta = null) {
+  async function submitSearch(queryText, itemMeta = null, newTab = false) {
     if (!activeInput) return;
     setInputValue(activeInput, queryText, false);
-    if (itemMeta) {
-      applyNyaaSelects(itemMeta);
-    }
+    if (itemMeta) applyNyaaSelects(itemMeta);
     await recordQueryToHistory(queryText);
     closeDropdown();
 
     const form = activeInput.closest("form");
+    if (newTab && form && form.action && activeInput.name) {
+      try {
+        const url = new URL(form.action, location.href);
+        url.searchParams.set(activeInput.name, queryText.trim());
+        window.open(url.toString(), "_blank");
+        return;
+      } catch (e) {}
+    }
+
     if (form) {
       const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
       if (submitBtn) {
@@ -259,7 +314,7 @@
     state.favorites = favorites;
     await saveCurrentProfile();
     updateInbarButtons();
-    renderDropdown();
+    renderResultsSection();
   }
 
   function isFavorited(queryText) {
@@ -287,23 +342,36 @@
     openDropdown();
   }
 
-  function toggleTokenInInput(token) {
+  function getChipStateInInput(chip, inputVal) {
+    const cleanChip = chip.replace(/^-/, "");
+    const esc = cleanChip.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`(^|\\s)-${esc}(?=\\s|$)`, "i").test(inputVal)) return "excluded";
+    if (new RegExp(`(^|\\s)${esc}(?=\\s|$)`, "i").test(inputVal)) return "included";
+    return "off";
+  }
+
+  // mode: "include" (LMB) or "exclude" (RMB)
+  function toggleChipInInput(chip, mode = "include") {
     if (!activeInput) return;
-    const current = activeInput.value.trim();
-    if (!current) {
-      setInputValue(activeInput, token + " ", true);
-      openDropdown();
-      return;
-    }
-    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, "i");
-    let updated;
-    if (regex.test(current)) {
-      updated = current.replace(regex, " ").replace(/\s+/g, " ").trim();
+    let current = activeInput.value.trim();
+    const baseChip = chip.replace(/^-/, "");
+    const targetToken = mode === "exclude" ? `-${baseChip}` : baseChip;
+    const escBase = baseChip.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // Remove any existing include or exclude version of this chip first
+    const reAny = new RegExp(`(^|\\s)-?${escBase}(?=\\s|$)`, "ig");
+    const curState = getChipStateInInput(chip, current);
+
+    if ((mode === "include" && curState === "included") || (mode === "exclude" && curState === "excluded")) {
+      // Toggle off
+      current = current.replace(reAny, " ").replace(/\s+/g, " ").trim();
     } else {
-      updated = (current + " " + token).replace(/\s+/g, " ").trim();
+      // Replace or append targetToken
+      current = current.replace(reAny, " ").replace(/\s+/g, " ").trim();
+      current = current ? `${current} ${targetToken}` : targetToken;
     }
-    setInputValue(activeInput, updated ? updated + " " : "", true);
+
+    setInputValue(activeInput, current ? current + " " : "", true);
     openDropdown();
   }
 
@@ -320,12 +388,48 @@
     openDropdown();
   }
 
+  function queryTagDatabase(query, limit = 25) {
+    const q = (query || "").trim().toLowerCase();
+    const ns = state.activeNsFilter;
+    const pool = getActiveTagPool();
+    if (!q && !ns) return [];
+
+    const prefixMatches = [];
+    const subMatches = [];
+    const seen = new Set();
+
+    for (let i = 0; i < pool.length; i++) {
+      const item = pool[i];
+      const tag = item.t;
+      if (!tag) continue;
+      const lowerTag = tag.toLowerCase();
+      if (seen.has(lowerTag)) continue;
+
+      if (ns && !lowerTag.startsWith(ns)) continue;
+      if (!q) {
+        seen.add(lowerTag);
+        prefixMatches.push(item);
+        if (prefixMatches.length >= limit) break;
+        continue;
+      }
+
+      if (lowerTag.startsWith(q) || (ns && lowerTag.slice(ns.length).startsWith(q))) {
+        seen.add(lowerTag);
+        prefixMatches.push(item);
+      } else if (lowerTag.includes(q) || (item.d && item.d.toLowerCase().includes(q))) {
+        seen.add(lowerTag);
+        subMatches.push(item);
+      }
+      if (prefixMatches.length >= limit && subMatches.length >= limit) break;
+    }
+    return [...prefixMatches, ...subMatches].slice(0, limit);
+  }
+
   function createInbarControls(input) {
     if (inbarHost) {
       inbarHost.remove();
       inbarHost = null;
     }
-
     inbarHost = document.createElement("div");
     inbarHost.id = "nyaa-smart-inbar-host";
     inbarHost.style.cssText = "position:fixed;z-index:2147483646;pointer-events:none;";
@@ -335,54 +439,22 @@
     inbarShadow.innerHTML = `
       <style>
         .inbar-wrap {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 5px;
-          pointer-events: auto;
-          height: 100%;
-          padding-right: 6px;
+          display: flex; align-items: center; justify-content: flex-end;
+          gap: 5px; pointer-events: auto; height: 100%; padding-right: 6px;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .ib-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          border: none;
-          background: rgba(82, 82, 91, 0.85);
-          color: #e4e4e7;
-          font-size: 14px;
-          line-height: 1;
-          cursor: pointer;
-          padding: 0;
-          transition: background 0.12s, color 0.12s, transform 0.1s;
-          user-select: none;
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 22px; height: 22px; border-radius: 50%; border: none;
+          background: rgba(82, 82, 91, 0.85); color: #e4e4e7;
+          font-size: 14px; line-height: 1; cursor: pointer; padding: 0;
+          transition: background 0.12s, color 0.12s, transform 0.1s; user-select: none;
         }
-        .ib-btn:hover {
-          background: #71717a;
-          color: #ffffff;
-          transform: scale(1.06);
-        }
-        .ib-btn.clear-btn {
-          font-size: 15px;
-          font-weight: 600;
-        }
-        .ib-btn.clear-btn:hover {
-          background: #ed2553;
-          color: #fff;
-        }
-        .ib-btn.word-btn {
-          border-radius: 4px;
-          width: 24px;
-          font-size: 12px;
-          background: rgba(63, 63, 70, 0.85);
-        }
-        .hidden {
-          display: none !important;
-        }
+        .ib-btn:hover { background: #71717a; color: #fff; transform: scale(1.06); }
+        .ib-btn.clear-btn { font-size: 15px; font-weight: 600; }
+        .ib-btn.clear-btn:hover { background: #ed2553; color: #fff; }
+        .ib-btn.word-btn { border-radius: 4px; width: 24px; font-size: 12px; background: rgba(63, 63, 70, 0.85); }
+        .hidden { display: none !important; }
       </style>
       <div class="inbar-wrap">
         <button type="button" class="ib-btn word-btn hidden" id="ib-del-word" title="Стереть последнее слово / тег (⌫)">⌫</button>
@@ -396,7 +468,6 @@
       setInputValue(activeInput, "", true);
       openDropdown();
     });
-
     inbarShadow.getElementById("ib-del-word").addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -424,15 +495,12 @@
 
   function updateInbarButtons() {
     if (!activeInput || !inbarShadow) return;
-    const val = activeInput.value || "";
-    const hasText = val.length > 0;
+    const hasText = (activeInput.value || "").length > 0;
     const clearBtn = inbarShadow.getElementById("ib-clear");
     const wordBtn = inbarShadow.getElementById("ib-del-word");
-
     if (!activeInput.dataset.origPaddingRight) {
       activeInput.dataset.origPaddingRight = activeInput.style.paddingRight || "12px";
     }
-
     if (hasText) {
       clearBtn.classList.remove("hidden");
       wordBtn.classList.remove("hidden");
@@ -454,287 +522,176 @@
     shadow = hostEl.attachShadow({ mode: "open" });
     shadow.innerHTML = `
       <style>
-        * {
-          box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         .nh-dropdown {
           background: #1f1f1f;
           color: #d9d9d9;
           border: 1px solid #383838;
           border-top: none;
-          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+          box-shadow: 0 14px 32px rgba(0, 0, 0, 0.7);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          font-size: 14px;
-          max-height: 460px;
-          overflow-y: auto;
+          font-size: 13.5px;
+          max-height: 490px;
+          display: flex;
+          flex-direction: column;
           user-select: none;
         }
-        .nh-dropdown::-webkit-scrollbar {
-          width: 8px;
+        .nh-results {
+          overflow-y: auto;
+          flex: 1;
         }
-        .nh-dropdown::-webkit-scrollbar-track {
-          background: #181818;
-        }
-        .nh-dropdown::-webkit-scrollbar-thumb {
-          background: #4d4d4d;
-        }
-        /* Quick Tag Chips Strip */
+        .nh-results::-webkit-scrollbar { width: 8px; }
+        .nh-results::-webkit-scrollbar-track { background: #181818; }
+        .nh-results::-webkit-scrollbar-thumb { background: #4d4d4d; border-radius: 4px; }
+
         .chips-bar {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 5px;
-          padding: 7px 10px;
-          background: #171717;
-          border-bottom: 1px solid #2e2e2e;
+          display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+          padding: 7px 10px; background: #161616; border-bottom: 1px solid #2e2e2e;
         }
         .chips-label {
-          font-size: 11px;
-          color: #8c8c8c;
-          margin-right: 3px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.4px;
+          font-size: 11px; color: #8c8c8c; margin-right: 3px;
+          font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .chip-wrap {
+          display: inline-flex; align-items: center; position: relative;
         }
         .chip-btn {
-          background: #2b2b2b;
-          color: #d4d4d4;
-          border: 1px solid #3f3f3f;
-          border-radius: 3px;
-          padding: 2px 7px;
-          font-size: 12px;
-          cursor: pointer;
-          transition: all 0.12s;
-          font-family: Consolas, Monaco, "Courier New", monospace;
+          background: #2b2b2b; color: #d4d4d4; border: 1px solid #3f3f3f;
+          border-radius: 4px; padding: 2px 7px; font-size: 12px; cursor: pointer;
+          transition: all 0.12s; font-family: Consolas, Monaco, "Courier New", monospace;
         }
-        .chip-btn:hover {
-          background: #3a3a3a;
-          color: #fff;
-          border-color: #666;
+        .chip-btn:hover { background: #3a3a3a; color: #fff; border-color: #666; }
+        .chip-btn.included { background: #7c5816; color: #fff3d1; border-color: #c28b22; }
+        .chip-btn.excluded { background: #5c1927; color: #ffd4dd; border-color: #c4314b; text-decoration: line-through; }
+        .chip-del {
+          display: none; margin-left: -4px; background: #3a1a22; color: #ff8ca3;
+          border: 1px solid #6b2938; border-radius: 0 4px 4px 0; padding: 2px 4px;
+          font-size: 11px; cursor: pointer; line-height: 1;
         }
-        .chip-btn.active {
-          background: #7c5816;
-          color: #fff3d1;
-          border-color: #c28b22;
-        }
+        .chip-wrap:hover .chip-del { display: inline-block; }
+        .chip-wrap:hover .chip-btn { border-top-right-radius: 0; border-bottom-right-radius: 0; }
         .chip-add-btn {
-          background: transparent;
-          color: #8c8c8c;
-          border: 1px dashed #444;
-          border-radius: 3px;
-          padding: 2px 6px;
-          font-size: 11px;
-          cursor: pointer;
+          background: transparent; color: #9c9c9c; border: 1px dashed #4a4a4a;
+          border-radius: 4px; padding: 2px 7px; font-size: 11.5px; cursor: pointer;
         }
-        .chip-add-btn:hover {
-          color: #fff;
-          border-color: #888;
+        .chip-add-btn:hover { color: #fff; border-color: #888; }
+        .inline-chip-box {
+          display: inline-flex; align-items: center; gap: 4px;
+        }
+        .inline-chip-input {
+          background: #111; color: #fff; border: 1px solid #ed2553;
+          border-radius: 4px; padding: 2px 7px; font-size: 12px; width: 145px; outline: none;
         }
 
-        /* Top Search For bar */
+        /* Quick Operator & Namespace Toolbar */
+        .ops-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 6px; padding: 5px 10px;
+          background: #1b1b1b; border-bottom: 1px solid #2b2b2b;
+        }
+        .ops-group { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+        .op-btn {
+          background: #27272a; color: #cbd5e1; border: 1px solid #3f3f46;
+          border-radius: 3px; padding: 2px 7px; font-size: 11.5px; cursor: pointer;
+          transition: background 0.1s;
+        }
+        .op-btn:hover { background: #3f3f46; color: #fff; }
+        .op-btn.active { background: #2563eb; color: #fff; border-color: #3b82f6; }
+        .op-btn.search-submit-btn {
+          background: #ed2553; color: #fff; border-color: #ed2553; font-weight: 600; padding: 3px 10px;
+        }
+        .op-btn.search-submit-btn:hover { background: #d41c47; }
+
         .search-for-row {
-          display: flex;
-          align-items: stretch;
-          background: #3b3b3b;
-          border-bottom: 1px solid #2d2d2d;
-          min-height: 38px;
+          display: flex; align-items: stretch; background: #343434;
+          border-bottom: 1px solid #2d2d2d; min-height: 36px;
         }
         .search-for-main {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          padding: 6px 12px;
-          cursor: pointer;
-          color: #b5b5b5;
-          gap: 8px;
-          overflow: hidden;
+          flex: 1; display: flex; align-items: center; padding: 6px 12px;
+          cursor: pointer; color: #b5b5b5; gap: 8px; overflow: hidden;
         }
-        .search-for-main:hover {
-          background: #454545;
-        }
-        .search-for-icon {
-          color: #8e8e8e;
-          font-size: 14px;
-        }
+        .search-for-main:hover { background: #404040; }
         .search-for-query {
-          color: #ffffff;
-          font-weight: 600;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        /* Rows */
+
+        .nh-section-hdr {
+          padding: 4px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.5px; color: #7e7e7e; background: #181818; border-bottom: 1px solid #272727;
+        }
         .nh-row {
-          display: flex;
-          align-items: stretch;
-          background: #1f1f1f;
-          border-bottom: 1px solid #2c2c2c;
-          min-height: 36px;
-          transition: background 0.08s;
+          display: flex; align-items: stretch; background: #1f1f1f;
+          border-bottom: 1px solid #2a2a2a; min-height: 34px; transition: background 0.08s;
         }
-        .nh-row:hover {
-          background: #292929;
-        }
-        .nh-row.dragging {
-          opacity: 0.45;
-          background: #333;
-        }
+        .nh-row:hover { background: #292929; }
+        .nh-row.dragging { opacity: 0.45; background: #333; }
         .nh-cell-main {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          padding: 6px 12px;
-          gap: 8px;
-          cursor: pointer;
-          overflow: hidden;
+          flex: 1; display: flex; align-items: center; padding: 5px 12px;
+          gap: 8px; cursor: pointer; overflow: hidden;
         }
-        .nh-star-icon {
-          color: #f5b942;
-          font-size: 14px;
-          flex-shrink: 0;
-          width: 16px;
-          text-align: center;
-        }
-        .nh-clock-icon {
-          color: #9e9e9e;
-          font-size: 13px;
-          flex-shrink: 0;
-          width: 16px;
-          text-align: center;
-        }
+        .nh-star-icon { color: #f5b942; font-size: 14px; flex-shrink: 0; width: 16px; text-align: center; }
+        .nh-clock-icon { color: #9e9e9e; font-size: 13px; flex-shrink: 0; width: 16px; text-align: center; }
+        .nh-tag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .cat-artist { color: #f87171; }
+        .dot-artist { background: #f87171; }
+        .cat-character { color: #4ade80; }
+        .dot-character { background: #4ade80; }
+        .cat-copyright, .cat-parody { color: #c084fc; }
+        .dot-copyright, .dot-parody { background: #c084fc; }
+        .cat-female { color: #f472b6; }
+        .dot-female { background: #f472b6; }
+        .cat-male { color: #60a5fa; }
+        .dot-male { background: #60a5fa; }
+        .cat-language, .cat-meta { color: #fbbf24; }
+        .dot-language, .dot-meta { background: #fbbf24; }
+        .cat-nyaa { color: #38bdf8; }
+        .dot-nyaa { background: #38bdf8; }
+        .cat-general, .cat-group { color: #e2e8f0; }
+        .dot-general, .dot-group { background: #94a3b8; }
+
         .nh-text {
-          color: #e6e6e6;
-          font-size: 14px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          color: #e6e6e6; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .nh-text.mono {
-          font-family: Consolas, Monaco, "Courier New", monospace;
-          font-size: 13.5px;
-        }
+        .nh-text.mono { font-family: Consolas, Monaco, "Courier New", monospace; font-size: 13px; }
         .nh-desc {
-          color: #8a8a8a;
-          font-size: 12.5px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          margin-left: 4px;
+          color: #8a8a8a; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 4px;
         }
         .nh-count {
-          color: #8a8a8a;
-          font-size: 12.5px;
-          margin-left: auto;
-          padding-left: 8px;
-          flex-shrink: 0;
+          color: #8a8a8a; font-size: 12px; margin-left: auto; padding-left: 8px; flex-shrink: 0;
         }
         .nh-cell-action {
-          width: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-left: 1px solid #2c2c2c;
-          color: #b0b0b0;
-          cursor: pointer;
-          font-size: 15px;
-          flex-shrink: 0;
-          background: transparent;
-          transition: background 0.1s, color 0.1s;
+          width: 34px; display: flex; align-items: center; justify-content: center;
+          border-left: 1px solid #2a2a2a; color: #b0b0b0; cursor: pointer;
+          font-size: 14px; flex-shrink: 0; background: transparent; transition: background 0.1s, color 0.1s;
         }
-        .nh-cell-action:hover {
-          background: #343434;
-          color: #ffffff;
-        }
-        .nh-cell-action.star-cell.active {
-          color: #f5b942;
-        }
-        .nh-cell-action.star-cell:hover {
-          color: #f5b942;
-        }
-        .nh-cell-action.del-cell:hover {
-          background: #4a1c26;
-          color: #ff6b8b;
-        }
+        .nh-cell-action:hover { background: #343434; color: #fff; }
+        .nh-cell-action.star-cell.active, .nh-cell-action.star-cell:hover { color: #f5b942; }
+        .nh-cell-action.del-cell:hover { background: #4a1c26; color: #ff6b8b; }
         .nh-cell-action.drag-cell {
-          cursor: grab;
-          width: 26px;
-          font-size: 12px;
-          color: #666;
-          border-left: none;
-          border-right: 1px solid #2c2c2c;
+          cursor: grab; width: 24px; font-size: 12px; color: #666;
+          border-left: none; border-right: 1px solid #2a2a2a;
         }
-        .nh-cell-action.drag-cell:hover {
-          color: #bbb;
-        }
-
-        /* Expandable "N more saved / recent" row */
         .nh-more-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 7px 12px;
-          background: #1a1a1a;
-          border-bottom: 1px solid #2c2c2c;
-          color: #9e9e9e;
-          font-size: 13px;
-          cursor: pointer;
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 6px 12px; background: #1a1a1a; border-bottom: 1px solid #2c2c2c;
+          color: #9e9e9e; font-size: 12.5px; cursor: pointer;
         }
-        .nh-more-row:hover {
-          background: #252525;
-          color: #d9d9d9;
-        }
-        .nh-add-fav-btn {
-          color: #f5b942;
-          font-size: 12px;
-          cursor: pointer;
-          padding: 2px 6px;
-          border-radius: 3px;
-        }
-        .nh-add-fav-btn:hover {
-          background: rgba(245, 185, 66, 0.15);
-        }
-
-        /* Inline editor inside row */
-        .nh-edit-wrap {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          width: 100%;
-          padding: 4px 8px;
-          background: #262626;
-        }
-        .nh-edit-input {
-          flex: 1;
-          background: #141414;
-          color: #fff;
-          border: 1px solid #555;
-          border-radius: 3px;
-          padding: 4px 8px;
-          font-size: 13px;
-        }
-        .nh-edit-save {
-          background: #2ea043;
-          color: #fff;
-          border: none;
-          border-radius: 3px;
-          padding: 4px 10px;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        .nh-edit-cancel {
-          background: #444;
-          color: #ddd;
-          border: none;
-          border-radius: 3px;
-          padding: 4px 8px;
-          cursor: pointer;
-          font-size: 12px;
-        }
+        .nh-more-row:hover { background: #252525; color: #d9d9d9; }
+        .nh-add-fav-btn { color: #f5b942; font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
+        .nh-add-fav-btn:hover { background: rgba(245, 185, 66, 0.15); }
+        .nh-edit-wrap { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 8px; background: #262626; }
+        .nh-edit-input { flex: 1; background: #141414; color: #fff; border: 1px solid #555; border-radius: 3px; padding: 4px 8px; font-size: 13px; }
+        .nh-edit-save { background: #2ea043; color: #fff; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .nh-edit-cancel { background: #444; color: #ddd; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
       </style>
-      <div class="nh-dropdown" id="nh-dropdown"></div>
+      <div class="nh-dropdown" id="nh-dropdown">
+        <div id="nh-header-zone"></div>
+        <div class="nh-results" id="nh-results"></div>
+      </div>
     `;
     dropdownEl = shadow.getElementById("nh-dropdown");
+    chipsContainer = shadow.getElementById("nh-header-zone");
+    resultsContainer = shadow.getElementById("nh-results");
   }
 
   function positionDropdown() {
@@ -747,7 +704,7 @@
       const gRect = group.getBoundingClientRect();
       width = Math.max(rect.width, gRect.right - rect.left);
     }
-    width = Math.max(width, 420);
+    width = Math.max(width, 460);
     if (left + width > window.innerWidth - 12) {
       left = Math.max(8, window.innerWidth - width - 12);
     }
@@ -756,21 +713,22 @@
     hostEl.style.width = `${width}px`;
   }
 
-  function openDropdown() {
+  async function openDropdown() {
     if (!activeInput || !isSiteEnabled()) return;
+    await ensureBuiltinTagDb();
     createDropdownHost();
     isDropdownOpen = true;
     positionDropdown();
-    renderDropdown();
+    renderChipsSection();
+    renderResultsSection();
     hostEl.style.display = "block";
   }
 
   function closeDropdown() {
     isDropdownOpen = false;
     state.editingId = null;
-    if (hostEl) {
-      hostEl.style.display = "none";
-    }
+    state.addingChipInline = false;
+    if (hostEl) hostEl.style.display = "none";
   }
 
   function escapeHtml(str) {
@@ -781,49 +739,140 @@
       .replace(/"/g, "&quot;");
   }
 
-  function renderDropdown() {
-    if (!dropdownEl || !activeInput) return;
+  function renderChipsSection() {
+    if (!chipsContainer || !activeInput) return;
+    const trimmedVal = (activeInput.value || "").trim();
+    const siteCat = getSiteCategory();
+
+    let html = `<div class="chips-bar">
+      <span class="chips-label" title="ЛКМ: добавить/убрать | ПКМ: исключить (-тег)">Теги (${escapeHtml(getProfileKey())}):</span>`;
+
+    for (const chip of state.chips) {
+      const chipState = getChipStateInInput(chip, trimmedVal);
+      const cls = chipState === "included" ? "included" : chipState === "excluded" ? "excluded" : "";
+      html += `<span class="chip-wrap">
+        <button type="button" class="chip-btn ${cls}" data-chip="${escapeHtml(chip)}" title="ЛКМ: +тег | ПКМ: -тег (исключить)">${escapeHtml(chip)}</button>
+        <button type="button" class="chip-del" data-del-chip="${escapeHtml(chip)}" title="Удалить чипс">×</button>
+      </span>`;
+    }
+
+    if (state.addingChipInline) {
+      html += `<span class="inline-chip-box">
+        <input type="text" class="inline-chip-input" id="nh-inline-chip-input" placeholder="Введите тег..." autocomplete="off" />
+      </span>`;
+    } else {
+      html += `<button type="button" class="chip-add-btn" id="nh-add-chip" title="Добавить быстрый чипс с подсказками">+ тег</button>`;
+    }
+    html += `</div>`;
+
+    // Quick Operators + Namespace filters
+    const namespaces = siteCat === "hentai"
+      ? ["female:", "male:", "artist:", "parody:", "character:", "language:"]
+      : siteCat === "booru"
+      ? ["order:score", "rating:general", "rating:explicit"]
+      : [];
+
+    html += `<div class="ops-bar">
+      <div class="ops-group">
+        <button type="button" class="op-btn" id="op-negate" title="Добавить/убрать минус (-) перед последним словом">− Исключить</button>
+        <button type="button" class="op-btn" id="op-quote" title="Взять последнее слово в кавычки">&quot;&quot; Точно</button>
+        <button type="button" class="op-btn" id="op-or" title="Добавить оператор OR">OR</button>`;
+    for (const ns of namespaces) {
+      const isAct = state.activeNsFilter === ns;
+      html += `<button type="button" class="op-btn ${isAct ? "active" : ""}" data-ns="${escapeHtml(ns)}" title="Фильтр базы по ${escapeHtml(ns)}">${escapeHtml(ns)}</button>`;
+    }
+    html += `</div>
+      <button type="button" class="op-btn search-submit-btn" id="op-submit" title="Запустить поиск мышкой">🔍 Найти</button>
+    </div>`;
+
+    chipsContainer.innerHTML = html;
+    bindChipsEvents();
+  }
+
+  function renderResultsSection(inlineChipQuery = null) {
+    if (!resultsContainer || !activeInput) return;
     const rawVal = activeInput.value || "";
     const trimmedVal = rawVal.trim();
     const lowerVal = trimmedVal.toLowerCase();
+    const { token } = getCurrentTokenInfo(rawVal);
 
     let html = "";
 
-    // 1. Per-site Quick Tag Chips Bar (only displays this site's chips + "+ тег" button)
-    html += `<div class="chips-bar">
-      <span class="chips-label">Теги (${escapeHtml(getProfileKey())}):</span>`;
-    for (const chip of state.chips) {
-      const isActive = new RegExp(`(^|\\s)${chip.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=\\s|$)`, "i").test(trimmedVal);
-      html += `<button type="button" class="chip-btn ${isActive ? "active" : ""}" data-chip="${escapeHtml(chip)}" title="ЛКМ: добавить/убрать тег | ПКМ: удалить тег с этого сайта">${escapeHtml(chip)}</button>`;
+    // If user is typing inside inline "+ тег" box, show matching tags to add as a chip
+    if (state.addingChipInline && inlineChipQuery !== null) {
+      const matches = queryTagDatabase(inlineChipQuery, 20);
+      html += `<div class="nh-section-hdr">Кликните по тегу, чтобы добавить в быстрые чипсы:</div>`;
+      if (!matches.length) {
+        html += `<div class="nh-row"><div class="nh-cell-main"><span class="nh-desc">Нажмите Enter, чтобы добавить «${escapeHtml(inlineChipQuery)}»</span></div></div>`;
+      } else {
+        matches.forEach(item => {
+          html += `
+            <div class="nh-row" data-action="pick-inline-chip" data-tag="${escapeHtml(item.t)}">
+              <div class="nh-cell-main">
+                <span class="nh-tag-dot dot-${escapeHtml(item.c || "general")}"></span>
+                <span class="nh-text mono cat-${escapeHtml(item.c || "general")}">${escapeHtml(item.t)}</span>
+                ${item.d ? `<span class="nh-desc">${escapeHtml(item.d)}</span>` : ""}
+              </div>
+            </div>`;
+        });
+      }
+      resultsContainer.innerHTML = html;
+      bindResultsEvents();
+      return;
     }
-    html += `<button type="button" class="chip-add-btn" id="nh-add-chip" title="Добавить свой быстрый тег для этого сайта">+ тег</button>
-    </div>`;
 
-    // 2. If user typed something, show "↵ Search for <query>" with ★ button on right
+    // 1. "Search for <query>" row
     if (trimmedVal.length > 0) {
       const favActive = isFavorited(trimmedVal);
       html += `
         <div class="search-for-row">
           <div class="search-for-main" data-action="submit-current">
-            <span class="search-for-icon">↵</span>
-            <span>Search for</span>
+            <span>↵</span>
+            <span>Найти:</span>
             <span class="search-for-query">${escapeHtml(trimmedVal)}</span>
           </div>
-          <div class="nh-cell-action star-cell ${favActive ? "active" : ""}" data-action="star-current" title="Сохранить в Избранное этого сайта (★)">
+          <div class="nh-cell-action star-cell ${favActive ? "active" : ""}" data-action="star-current" title="Сохранить в Избранное (★)">
             ${favActive ? "★" : "☆"}
           </div>
         </div>
       `;
     }
 
-    // 3. Per-site Favorites (Saved)
+    // 2. Autocomplete suggestions by LAST TOKEN (from tag DB)
+    const tokenClean = token.replace(/^[-+"]/, "");
+    if (tokenClean.length >= 1 || state.activeNsFilter) {
+      const dbMatches = queryTagDatabase(tokenClean, 25);
+      if (dbMatches.length > 0) {
+        html += `<div class="nh-section-hdr">Подсказки из базы тегов (клик — вставить)</div>`;
+        dbMatches.forEach(item => {
+          const catCls = escapeHtml(item.c || "general");
+          const popStr = item.p >= 1000 ? `${Math.round(item.p / 1000)}k` : (item.p || "");
+          html += `
+            <div class="nh-row">
+              <div class="nh-cell-main" data-action="insert-token" data-tag="${escapeHtml(item.t)}">
+                <span class="nh-tag-dot dot-${catCls}"></span>
+                <span class="nh-text mono cat-${catCls}">${escapeHtml(item.t)}</span>
+                ${item.d ? `<span class="nh-desc">${escapeHtml(item.d)}</span>` : ""}
+                ${popStr ? `<span class="nh-count">${popStr}</span>` : ""}
+              </div>
+              <div class="nh-cell-action" data-action="run-query" data-query="${escapeHtml(item.t)}" title="Искать только этот тег">🔍</div>
+              <div class="nh-cell-action star-cell" data-action="add-chip-direct" data-tag="${escapeHtml(item.t)}" title="Закрепить в чипсах сверху">+</div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    // 3. Per-site Favorites
     const filteredFavs = lowerVal
       ? state.favorites.filter(f => f.text.toLowerCase().includes(lowerVal))
       : state.favorites;
-
     const favLimit = state.showAllSaved || lowerVal ? filteredFavs.length : Math.min(4, filteredFavs.length);
     const visibleFavs = filteredFavs.slice(0, favLimit);
 
+    if (visibleFavs.length > 0) {
+      html += `<div class="nh-section-hdr">★ Избранные запросы (СКМ — в новой вкладке)</div>`;
+    }
     visibleFavs.forEach((fav, idx) => {
       if (state.editingId === fav.id) {
         html += `
@@ -833,24 +882,20 @@
               <button type="button" class="nh-edit-save" data-action="save-edit" data-id="${escapeHtml(fav.id)}">OK</button>
               <button type="button" class="nh-edit-cancel" data-action="cancel-edit">Отмена</button>
             </div>
-          </div>
-        `;
+          </div>`;
         return;
       }
-
-      const isBracketed = fav.text.startsWith("[");
       html += `
         <div class="nh-row" draggable="${!lowerVal}" data-idx="${idx}" data-id="${escapeHtml(fav.id)}">
-          ${!lowerVal ? `<div class="nh-cell-action drag-cell" title="Перетащить выше/ниже">⠿</div>` : ""}
+          ${!lowerVal ? `<div class="nh-cell-action drag-cell" title="Перетащить">⠿</div>` : ""}
           <div class="nh-cell-main" data-action="run-query" data-query="${escapeHtml(fav.text)}" data-id="${escapeHtml(fav.id)}">
             <span class="nh-star-icon">★</span>
-            <span class="nh-text ${isBracketed ? "mono" : ""}">${escapeHtml(fav.text)}</span>
+            <span class="nh-text mono">${escapeHtml(fav.text)}</span>
           </div>
-          <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(fav.text)}" title="Подставить в строку без отправки (→)">→</div>
-          <div class="nh-cell-action" data-action="edit-fav" data-id="${escapeHtml(fav.id)}" title="Редактировать запрос (✏️)">✎</div>
-          <div class="nh-cell-action del-cell" data-action="delete-fav" data-id="${escapeHtml(fav.id)}" title="Удалить из избранного (×)">×</div>
-        </div>
-      `;
+          <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(fav.text)}" title="Подставить в строку">→</div>
+          <div class="nh-cell-action" data-action="edit-fav" data-id="${escapeHtml(fav.id)}" title="Редактировать">✎</div>
+          <div class="nh-cell-action del-cell" data-action="delete-fav" data-id="${escapeHtml(fav.id)}" title="Удалить">×</div>
+        </div>`;
     });
 
     if (!lowerVal) {
@@ -858,153 +903,196 @@
       html += `
         <div class="nh-more-row" data-action="toggle-more-saved">
           <span>${hiddenFavCount > 0
-            ? (state.showAllSaved ? "▴ Свернуть сохранённые" : `▾ ${hiddenFavCount} more saved (показать все ${filteredFavs.length})`)
+            ? (state.showAllSaved ? "▴ Свернуть сохранённые" : `▾ Показать ещё ${hiddenFavCount} (всего ${filteredFavs.length})`)
             : `★ Сохранённые фавориты (${filteredFavs.length})`}</span>
           <span class="nh-add-fav-btn" data-action="add-new-fav">+ Добавить фаворит</span>
-        </div>
-      `;
+        </div>`;
     }
 
-    // 4. Per-site History (Recent / Frequent)
+    // 4. Per-site History
     const favSet = new Set(state.favorites.map(f => f.text.trim().toLowerCase()));
-    const filteredHist = state.history.filter(h => {
-      if (lowerVal && !h.text.toLowerCase().includes(lowerVal)) return false;
-      return true;
-    });
-
+    const filteredHist = state.history.filter(h => !lowerVal || h.text.toLowerCase().includes(lowerVal));
     const histLimit = state.showAllRecent || lowerVal ? filteredHist.length : Math.min(5, filteredHist.length);
     const visibleHist = filteredHist.slice(0, histLimit);
 
     visibleHist.forEach(item => {
       const isFav = favSet.has(item.text.trim().toLowerCase());
-      const isBracketed = item.text.startsWith("[");
       html += `
         <div class="nh-row">
           <div class="nh-cell-main" data-action="run-query" data-query="${escapeHtml(item.text)}">
             <span class="nh-clock-icon">🕒</span>
-            <span class="nh-text ${isBracketed ? "mono" : ""}">${escapeHtml(item.text)}</span>
-            <span class="nh-count" title="Сколько раз вы искали этот запрос на этом сайте">${item.count || 1}×</span>
+            <span class="nh-text mono">${escapeHtml(item.text)}</span>
+            <span class="nh-count">${item.count || 1}×</span>
           </div>
-          <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(item.text)}" title="Подставить в строку (→)">→</div>
-          <div class="nh-cell-action star-cell ${isFav ? "active" : ""}" data-action="promote-hist" data-query="${escapeHtml(item.text)}" title="Перенести в Избранное (☆)">
-            ${isFav ? "★" : "☆"}
-          </div>
-          <div class="nh-cell-action del-cell" data-action="delete-hist" data-id="${escapeHtml(item.id)}" title="Удалить из истории (×)">×</div>
-        </div>
-      `;
+          <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(item.text)}" title="Подставить в строку">→</div>
+          <div class="nh-cell-action star-cell ${isFav ? "active" : ""}" data-action="promote-hist" data-query="${escapeHtml(item.text)}" title="В избранное">${isFav ? "★" : "☆"}</div>
+          <div class="nh-cell-action del-cell" data-action="delete-hist" data-id="${escapeHtml(item.id)}" title="Удалить">×</div>
+        </div>`;
     });
 
     if (!lowerVal && filteredHist.length > 5) {
       const hiddenHistCount = filteredHist.length - 5;
       html += `
         <div class="nh-more-row" data-action="toggle-more-recent">
-          <span>${state.showAllRecent ? "▴ Свернуть недавние" : `▾ ${hiddenHistCount} more recent (всего ${filteredHist.length})`}</span>
+          <span>${state.showAllRecent ? "▴ Свернуть недавние" : `▾ Ещё ${hiddenHistCount} недавних`}</span>
           <span data-action="clear-all-hist" style="font-size:11.5px;color:#777;">Очистить историю</span>
-        </div>
-      `;
+        </div>`;
     }
 
-    // 5. Built-in Tag / Release Group Suggestions ONLY on nyaa.si / nyaa.land
-    if (lowerVal.length > 0 && isNyaaSite()) {
-      const existingTexts = new Set([
-        ...visibleFavs.map(f => f.text.toLowerCase()),
-        ...visibleHist.map(h => h.text.toLowerCase())
-      ]);
-      const matchingTags = NYAA_BUILTIN_TAGS.filter(t =>
-        !existingTexts.has(t.text.toLowerCase()) &&
-        (t.text.toLowerCase().includes(lowerVal) || t.desc.toLowerCase().includes(lowerVal))
-      );
-
-      matchingTags.forEach(tag => {
-        html += `
-          <div class="nh-row">
-            <div class="nh-cell-main" data-action="run-query" data-query="${escapeHtml(tag.text)}">
-              <span class="nh-text mono">${escapeHtml(tag.text)}</span>
-              <span class="nh-desc">${escapeHtml(tag.desc)}</span>
-            </div>
-            <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(tag.text)}" title="Добавить тег в строку поиска (→)">→</div>
-            <div class="nh-cell-action star-cell" data-action="promote-hist" data-query="${escapeHtml(tag.text)}" title="Сохранить в Избранное (☆)">☆</div>
-          </div>
-        `;
-      });
-    }
-
-    dropdownEl.innerHTML = html;
-    bindDropdownEvents();
+    resultsContainer.innerHTML = html;
+    bindResultsEvents();
   }
 
-  function bindDropdownEvents() {
-    if (!dropdownEl) return;
+  function bindChipsEvents() {
+    if (!chipsContainer) return;
 
-    dropdownEl.onmousedown = (e) => {
-      const tag = e.target.tagName;
-      if (tag !== "INPUT" && tag !== "SELECT") {
-        e.preventDefault();
-      }
+    chipsContainer.onmousedown = (e) => {
+      if (e.target.tagName !== "INPUT") e.preventDefault();
     };
 
-    dropdownEl.querySelectorAll(".chip-btn").forEach(btn => {
+    chipsContainer.querySelectorAll(".chip-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        toggleTokenInInput(btn.dataset.chip);
+        toggleChipInInput(btn.dataset.chip, "include");
+      });
+      btn.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleChipInInput(btn.dataset.chip, "exclude");
       });
     });
 
-    const addChipBtn = dropdownEl.querySelector("#nh-add-chip");
-    if (addChipBtn) {
-      addChipBtn.addEventListener("click", async (e) => {
+    chipsContainer.querySelectorAll(".chip-del").forEach(delBtn => {
+      delBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const newChip = prompt(`Введите новый быстрый тег-чипс для сайта ${getProfileKey()}:`);
-        if (newChip && newChip.trim()) {
-          const clean = newChip.trim();
-          if (!state.chips.includes(clean)) {
-            state.chips.push(clean);
+        const chip = delBtn.dataset.delChip;
+        state.chips = state.chips.filter(c => c !== chip);
+        await saveCurrentProfile();
+        renderChipsSection();
+      });
+    });
+
+    const addChipBtn = chipsContainer.querySelector("#nh-add-chip");
+    if (addChipBtn) {
+      addChipBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        state.addingChipInline = true;
+        renderChipsSection();
+        renderResultsSection("");
+        const inp = chipsContainer.querySelector("#nh-inline-chip-input");
+        if (inp) inp.focus();
+      });
+    }
+
+    const inlineInp = chipsContainer.querySelector("#nh-inline-chip-input");
+    if (inlineInp) {
+      inlineInp.addEventListener("input", () => {
+        renderResultsSection(inlineInp.value);
+      });
+      inlineInp.addEventListener("keydown", async (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const val = inlineInp.value.trim();
+          if (val && !state.chips.includes(val)) {
+            state.chips.push(val);
             await saveCurrentProfile();
-            renderDropdown();
           }
+          state.addingChipInline = false;
+          renderChipsSection();
+          renderResultsSection();
+          if (activeInput) activeInput.focus();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          state.addingChipInline = false;
+          renderChipsSection();
+          renderResultsSection();
+          if (activeInput) activeInput.focus();
         }
       });
     }
 
-    dropdownEl.querySelectorAll(".chip-btn").forEach(btn => {
-      btn.addEventListener("contextmenu", async (e) => {
-        e.preventDefault();
+    chipsContainer.querySelector("#op-negate")?.addEventListener("click", (e) => { e.stopPropagation(); negateLastToken(); });
+    chipsContainer.querySelector("#op-quote")?.addEventListener("click", (e) => { e.stopPropagation(); wrapLastTokenWithQuotes(); });
+    chipsContainer.querySelector("#op-or")?.addEventListener("click", (e) => { e.stopPropagation(); appendTokenToInput("OR"); });
+    chipsContainer.querySelector("#op-submit")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (activeInput) submitSearch(activeInput.value);
+    });
+
+    chipsContainer.querySelectorAll("[data-ns]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const chip = btn.dataset.chip;
-        if (confirm(`Удалить чипс «${chip}» для сайта ${getProfileKey()}?`)) {
-          state.chips = state.chips.filter(c => c !== chip);
-          await saveCurrentProfile();
-          renderDropdown();
+        const ns = btn.dataset.ns;
+        if (ns.endsWith(":")) {
+          state.activeNsFilter = state.activeNsFilter === ns ? "" : ns;
+          renderChipsSection();
+          renderResultsSection();
+        } else {
+          toggleChipInInput(ns, "include");
         }
       });
     });
+  }
 
-    dropdownEl.querySelectorAll("[data-action]").forEach(el => {
+  function bindResultsEvents() {
+    if (!resultsContainer) return;
+
+    resultsContainer.onmousedown = (e) => {
+      if (e.target.tagName !== "INPUT") e.preventDefault();
+    };
+
+    resultsContainer.querySelectorAll("[data-action]").forEach(el => {
+      el.addEventListener("auxclick", (e) => {
+        if (e.button === 1 && el.dataset.action === "run-query") {
+          e.preventDefault();
+          e.stopPropagation();
+          submitSearch(el.dataset.query, null, true);
+        }
+      });
+
       el.addEventListener("click", async (e) => {
         e.stopPropagation();
         const action = el.dataset.action;
 
-        if (action === "submit-current") {
+        if (action === "pick-inline-chip") {
+          const tag = el.dataset.tag;
+          if (tag && !state.chips.includes(tag)) {
+            state.chips.push(tag);
+            await saveCurrentProfile();
+          }
+          state.addingChipInline = false;
+          renderChipsSection();
+          renderResultsSection();
+          if (activeInput) activeInput.focus();
+        } else if (action === "insert-token") {
+          state.activeNsFilter = "";
+          replaceLastTokenWith(el.dataset.tag);
+        } else if (action === "add-chip-direct") {
+          const tag = el.dataset.tag;
+          if (tag && !state.chips.includes(tag)) {
+            state.chips.push(tag);
+            await saveCurrentProfile();
+            renderChipsSection();
+          }
+        } else if (action === "submit-current") {
           if (activeInput) submitSearch(activeInput.value);
         } else if (action === "star-current") {
           if (activeInput) toggleFavorite(activeInput.value);
         } else if (action === "run-query") {
-          const q = el.dataset.query;
           const favItem = state.favorites.find(f => f.id === el.dataset.id);
-          submitSearch(q, favItem || null);
+          submitSearch(el.dataset.query, favItem || null);
         } else if (action === "append-query") {
           appendTokenToInput(el.dataset.query);
         } else if (action === "edit-fav") {
           state.editingId = el.dataset.id;
-          renderDropdown();
-          const inp = dropdownEl.querySelector(`#edit-text-${state.editingId}`);
-          if (inp) inp.focus();
+          renderResultsSection();
+          resultsContainer.querySelector(`#edit-text-${state.editingId}`)?.focus();
         } else if (action === "cancel-edit") {
           state.editingId = null;
-          renderDropdown();
+          renderResultsSection();
         } else if (action === "save-edit") {
           const id = el.dataset.id;
-          const textInp = dropdownEl.querySelector(`#edit-text-${id}`);
+          const textInp = resultsContainer.querySelector(`#edit-text-${id}`);
           if (textInp && textInp.value.trim()) {
             const idx = state.favorites.findIndex(f => f.id === id);
             if (idx >= 0) {
@@ -1013,61 +1101,48 @@
             }
           }
           state.editingId = null;
-          renderDropdown();
+          renderResultsSection();
         } else if (action === "delete-fav") {
-          const id = el.dataset.id;
-          state.favorites = state.favorites.filter(f => f.id !== id);
+          state.favorites = state.favorites.filter(f => f.id !== el.dataset.id);
           await saveCurrentProfile();
           updateInbarButtons();
-          renderDropdown();
+          renderResultsSection();
         } else if (action === "toggle-more-saved") {
           state.showAllSaved = !state.showAllSaved;
-          renderDropdown();
+          renderResultsSection();
         } else if (action === "add-new-fav") {
           const newFavId = "fav_" + Date.now();
-          const defaultPlaceholder = isNyaaSite() ? "[SubsPlease] " : "";
-          const initialText = (activeInput && activeInput.value.trim()) || defaultPlaceholder;
-          state.favorites.unshift({
-            id: newFavId,
-            text: initialText,
-            category: "",
-            filter: "",
-            addedAt: Date.now()
-          });
+          const initialText = (activeInput && activeInput.value.trim()) || (isNyaaSite() ? "[SubsPlease] " : "");
+          state.favorites.unshift({ id: newFavId, text: initialText, category: "", filter: "", addedAt: Date.now() });
           state.editingId = newFavId;
           state.showAllSaved = true;
           await saveCurrentProfile();
-          renderDropdown();
-          const inp = dropdownEl.querySelector(`#edit-text-${newFavId}`);
-          if (inp) inp.focus();
+          renderResultsSection();
+          resultsContainer.querySelector(`#edit-text-${newFavId}`)?.focus();
         } else if (action === "promote-hist") {
           await toggleFavorite(el.dataset.query);
         } else if (action === "delete-hist") {
-          const id = el.dataset.id;
-          state.history = state.history.filter(h => h.id !== id);
+          state.history = state.history.filter(h => h.id !== el.dataset.id);
           await saveCurrentProfile();
-          renderDropdown();
+          renderResultsSection();
         } else if (action === "toggle-more-recent") {
           state.showAllRecent = !state.showAllRecent;
-          renderDropdown();
+          renderResultsSection();
         } else if (action === "clear-all-hist") {
           state.history = [];
           await saveCurrentProfile();
-          renderDropdown();
+          renderResultsSection();
         }
       });
     });
 
-    dropdownEl.querySelectorAll(".nh-row[draggable='true']").forEach(row => {
+    resultsContainer.querySelectorAll(".nh-row[draggable='true']").forEach(row => {
       row.addEventListener("dragstart", (e) => {
         dragSrcIndex = Number(row.dataset.idx);
         row.classList.add("dragging");
         e.dataTransfer.effectAllowed = "move";
       });
-      row.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-      });
+      row.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; });
       row.addEventListener("drop", async (e) => {
         e.preventDefault();
         const targetIdx = Number(row.dataset.idx);
@@ -1075,13 +1150,66 @@
           const moved = state.favorites.splice(dragSrcIndex, 1)[0];
           state.favorites.splice(targetIdx, 0, moved);
           await saveCurrentProfile();
-          renderDropdown();
+          renderResultsSection();
         }
       });
-      row.addEventListener("dragend", () => {
-        row.classList.remove("dragging");
-        dragSrcIndex = null;
-      });
+      row.addEventListener("dragend", () => { row.classList.remove("dragging"); dragSrcIndex = null; });
+    });
+  }
+
+  // On-Page Hover Tag Collector (nhentai, ExHentai, Danbooru, Gelbooru)
+  function initPageTagCollector() {
+    if (hoverPillHost) return;
+    hoverPillHost = document.createElement("div");
+    hoverPillHost.id = "nyaa-smart-hover-tag-pill";
+    hoverPillHost.style.cssText = "position:fixed;z-index:2147483645;display:none;";
+    document.body.appendChild(hoverPillHost);
+    hoverPillShadow = hoverPillHost.attachShadow({ mode: "open" });
+    hoverPillShadow.innerHTML = `
+      <style>
+        .pill-btn {
+          background: #ed2553; color: #fff; border: 1px solid #ff5c82;
+          border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: 700;
+          cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+          font-family: -apple-system, sans-serif;
+        }
+        .pill-btn:hover { background: #2ea043; border-color: #4ade80; }
+      </style>
+      <button type="button" class="pill-btn" id="collect-btn" title="Клик: в быстрые чипсы | Shift+клик: в строку поиска">+ тег</button>
+    `;
+
+    const collectBtn = hoverPillShadow.getElementById("collect-btn");
+    collectBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!hoveredTagText) return;
+      if (e.shiftKey && activeInput) {
+        appendTokenToInput(hoveredTagText);
+      } else if (!state.chips.includes(hoveredTagText)) {
+        state.chips.push(hoveredTagText);
+        await saveCurrentProfile();
+        if (isDropdownOpen) renderChipsSection();
+      }
+      collectBtn.textContent = "✓";
+      setTimeout(() => { collectBtn.textContent = "+ тег"; }, 900);
+    });
+
+    document.addEventListener("mouseover", (e) => {
+      if (!isSiteEnabled() || state.settings?.pageTagHover === false) return;
+      const target = e.target.closest("a.tag, .tag a, #taglist a, .search-tag, a[href*='/tag/'], a[href*='tags=']");
+      if (!target) {
+        if (!hoverPillHost.contains(e.target)) {
+          hoverPillHost.style.display = "none";
+        }
+        return;
+      }
+      const rawName = (target.querySelector(".name")?.textContent || target.textContent || "").trim();
+      if (!rawName || rawName.length > 50) return;
+      hoveredTagText = rawName.replace(/\s*\(\d+\)$/, "").trim();
+      const rect = target.getBoundingClientRect();
+      hoverPillHost.style.top = `${Math.max(4, rect.top - 2)}px`;
+      hoverPillHost.style.left = `${Math.min(window.innerWidth - 65, rect.right + 4)}px`;
+      hoverPillHost.style.display = "block";
     });
   }
 
@@ -1089,7 +1217,6 @@
     if (!input || activeInput === input) return;
     activeInput = input;
     activeInput.setAttribute("autocomplete", "off");
-
     createInbarControls(activeInput);
 
     activeInput.addEventListener("focus", () => {
@@ -1098,24 +1225,21 @@
         openDropdown();
       }
     });
-
     activeInput.addEventListener("click", () => {
-      if (isSiteEnabled()) {
-        openDropdown();
-      }
+      if (isSiteEnabled()) openDropdown();
     });
-
     activeInput.addEventListener("input", () => {
-      if (isSiteEnabled()) {
-        updateInbarButtons();
-        openDropdown();
-      }
+      if (!isSiteEnabled()) return;
+      updateInbarButtons();
+      renderChipsSection();
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        if (!isDropdownOpen) openDropdown();
+        else renderResultsSection();
+      }, 60);
     });
-
     activeInput.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        closeDropdown();
-      }
+      if (e.key === "Escape") closeDropdown();
     });
 
     const form = activeInput.closest("form");
@@ -1131,10 +1255,7 @@
 
   function detachUI() {
     closeDropdown();
-    if (inbarHost) {
-      inbarHost.remove();
-      inbarHost = null;
-    }
+    if (inbarHost) { inbarHost.remove(); inbarHost = null; }
     if (activeInput && activeInput.dataset.origPaddingRight) {
       activeInput.style.paddingRight = activeInput.dataset.origPaddingRight;
     }
@@ -1153,6 +1274,7 @@
       positionInbarControls();
       updateInbarButtons();
     }
+    initPageTagCollector();
   }
 
   document.addEventListener("mousedown", (e) => {
@@ -1161,7 +1283,8 @@
     if (
       (activeInput && path.includes(activeInput)) ||
       (hostEl && path.includes(hostEl)) ||
-      (inbarHost && path.includes(inbarHost))
+      (inbarHost && path.includes(inbarHost)) ||
+      (hoverPillHost && path.includes(hoverPillHost))
     ) {
       return;
     }
@@ -1174,7 +1297,6 @@
       if (isDropdownOpen) positionDropdown();
     }
   });
-
   window.addEventListener("scroll", () => {
     if (activeInput) {
       positionInbarControls();
@@ -1192,7 +1314,10 @@
         if (input) attachToInput(input);
       }
       updateInbarButtons();
-      if (isDropdownOpen) renderDropdown();
+      if (isDropdownOpen) {
+        renderChipsSection();
+        renderResultsSection();
+      }
     }
   });
 
@@ -1203,7 +1328,10 @@
     } else if (msg.type === "FAVORITES_UPDATED") {
       loadState().then(() => {
         updateInbarButtons();
-        if (isDropdownOpen) renderDropdown();
+        if (isDropdownOpen) {
+          renderChipsSection();
+          renderResultsSection();
+        }
       });
     }
   });
@@ -1234,18 +1362,13 @@
         openDropdown();
       }
     };
-
-    const onKey = (e) => {
-      if (e.key === "Escape") cleanup();
-    };
-
+    const onKey = (e) => { if (e.key === "Escape") cleanup(); };
     function cleanup() {
       state.pickingElement = false;
       banner.remove();
       document.removeEventListener("click", onClick, true);
       document.removeEventListener("keydown", onKey, true);
     }
-
     document.addEventListener("click", onClick, true);
     document.addEventListener("keydown", onKey, true);
   }

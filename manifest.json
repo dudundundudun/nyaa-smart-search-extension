@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Smart Search Favorites & Bar (nyaa.si Edition)",
-  "version": "1.2.0",
-  "description": "Выпадающее меню избранных и частых запросов в стиле nhentai, кнопки быстрой очистки (× и ⌫) и отдельные базы тегов и фаворитов для каждого сайта.",
+  "name": "Smart Search Favorites & Bar (v2.0 Tag DB Edition)",
+  "version": "2.0.0",
+  "description": "Умная панель поиска с оффлайн-базой тегов (Nyaa, Danbooru, ExHentai, nhentai), автодополнением по последнему слову, 3-состоянием чипсов и сбором тегов кликом.",
   "permissions": [
     "storage",
     "unlimitedStorage",
@@ -26,9 +26,23 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "data/tags_db.json"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "icons": {

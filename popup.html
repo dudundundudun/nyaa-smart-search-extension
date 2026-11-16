@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <title>Smart Search Favorites</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      width: 340px;
+      width: 360px;
       background: #1a1a1a;
       color: #e5e5e5;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -39,7 +37,7 @@
       box-shadow: 0 0 8px #ed2553;
     }
     .section {
-      padding: 12px 14px;
+      padding: 11px 14px;
       border-bottom: 1px solid #2c2c2c;
     }
     .toggle-row {
@@ -59,19 +57,14 @@
       color: #999;
       margin-top: 2px;
     }
-    /* Switch */
     .switch {
       position: relative;
       display: inline-block;
-      width: 44px;
-      height: 24px;
+      width: 42px;
+      height: 22px;
       flex-shrink: 0;
     }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
+    .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute;
       cursor: pointer;
@@ -83,20 +76,16 @@
     .slider:before {
       position: absolute;
       content: "";
-      height: 18px;
-      width: 18px;
+      height: 16px;
+      width: 16px;
       left: 3px;
       bottom: 3px;
       background-color: white;
       transition: .2s;
       border-radius: 50%;
     }
-    input:checked + .slider {
-      background-color: #2ea043;
-    }
-    input:checked + .slider:before {
-      transform: translateX(20px);
-    }
+    input:checked + .slider { background-color: #2ea043; }
+    input:checked + .slider:before { transform: translateX(20px); }
 
     .btn-full {
       width: 100%;
@@ -105,18 +94,16 @@
       border: 1px solid #3f3f3f;
       border-radius: 5px;
       padding: 7px 10px;
-      font-size: 12.5px;
+      font-size: 12px;
       cursor: pointer;
       margin-top: 8px;
       text-align: center;
       transition: background 0.12s;
     }
-    .btn-full:hover {
-      background: #383838;
-      color: #fff;
-    }
+    .btn-full:hover { background: #383838; color: #fff; }
+    .btn-danger:hover { background: #4a1c26; color: #ff809b; border-color: #7a293b; }
     .fav-preview {
-      max-height: 150px;
+      max-height: 120px;
       overflow-y: auto;
       margin-top: 8px;
       border: 1px solid #2e2e2e;
@@ -127,17 +114,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 6px 8px;
+      padding: 5px 8px;
       border-bottom: 1px solid #242424;
       font-size: 12px;
     }
-    .fav-item:last-child {
-      border-bottom: none;
-    }
-    .fav-star {
-      color: #f5b942;
-      margin-right: 5px;
-    }
+    .fav-item:last-child { border-bottom: none; }
+    .fav-star { color: #f5b942; margin-right: 5px; }
     .actions-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -157,7 +139,7 @@
       <span class="brand-dot"></span>
       <span>Smart Search Bar</span>
     </div>
-    <span style="font-size:11px;color:#888;">Manifest V3</span>
+    <span style="font-size:11px;color:#888;">v2.0 • Tag DB</span>
   </div>
 
   <div class="section">
@@ -172,6 +154,16 @@
       </label>
     </div>
     <button class="btn-full" id="pick-input-btn">🎯 Указать строку поиска кликом</button>
+    <div class="toggle-row" style="margin-top:10px;">
+      <div>
+        <div style="font-size:12.5px;font-weight:500;color:#ddd;">Сбор тегов со страниц (+)</div>
+        <div class="sub-label">Кнопка + при наведении на тег на сайте</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="hover-collect-toggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
   </div>
 
   <div class="section">
@@ -182,8 +174,21 @@
     <div class="fav-preview" id="fav-list"></div>
   </div>
 
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-weight:600;color:#ccc;">📚 Внешняя база тегов</span>
+      <span style="font-size:11px;color:#888;" id="custom-db-count">0 тегов</span>
+    </div>
+    <div class="sub-label">Поддерживает CSV (Danbooru/e621) и JSON (EhTagTranslation)</div>
+    <div class="actions-grid">
+      <button class="btn-full" id="import-tagdb-btn" style="margin-top:6px;">⬆ Загрузить теги</button>
+      <button class="btn-full btn-danger" id="clear-tagdb-btn" style="margin-top:6px;">🗑 Очистить базу</button>
+    </div>
+    <input type="file" id="import-tagdb-file" accept=".csv,.json,.txt" style="display:none;">
+  </div>
+
   <div class="section" style="border-bottom:none;">
-    <div style="font-weight:600;color:#ccc;margin-bottom:4px;">Резервная копия базы (.json)</div>
+    <div style="font-weight:600;color:#ccc;margin-bottom:4px;">Резервная копия профилей (.json)</div>
     <div class="actions-grid">
       <button class="btn-full" id="export-btn" style="margin-top:4px;">⬇ Экспорт</button>
       <button class="btn-full" id="import-btn" style="margin-top:4px;">⬆ Импорт</button>

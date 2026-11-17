@@ -3,845 +3,1511 @@
     {
       "t": "[SubsPlease] 1080p",
       "c": "nyaa",
+      "g": "groups",
       "d": "Релизы SubsPlease 1080p",
       "p": 1000
     },
     {
       "t": "[SubsPlease]",
       "c": "nyaa",
-      "d": "Онгоинги CR/HIDIVE",
+      "g": "groups",
+      "d": "Онгоинги CR / HIDIVE",
       "p": 980
     },
     {
       "t": "[Erai-raws]",
       "c": "nyaa",
-      "d": "Мульти-сабы и HEVC",
+      "g": "groups",
+      "d": "Мульти-субтитры и HEVC",
       "p": 950
     },
     {
       "t": "[EMBER]",
       "c": "nyaa",
+      "g": "groups",
       "d": "Компактный HEVC 10bit",
       "p": 920
     },
     {
       "t": "[Judas]",
       "c": "nyaa",
+      "g": "groups",
       "d": "Сезонные батчи HEVC",
       "p": 900
     },
     {
       "t": "[ASW]",
       "c": "nyaa",
+      "g": "groups",
       "d": "Лёгкий HEVC 10bit",
       "p": 880
     },
     {
       "t": "[ToonsHub]",
       "c": "nyaa",
+      "g": "groups",
       "d": "WEB-DL релизы",
       "p": 860
     },
     {
       "t": "[Vodes]",
       "c": "nyaa",
-      "d": "Качественные BD/WEB рипы",
+      "g": "groups",
+      "d": "Качественные BD / WEB рипы",
       "p": 840
+    },
+    {
+      "t": "[Yameii]",
+      "c": "nyaa",
+      "g": "groups",
+      "d": "Дубляж + субтитры",
+      "p": 835
+    },
+    {
+      "t": "[Moozzi2]",
+      "c": "nyaa",
+      "g": "groups",
+      "d": "BDRip максимального качества",
+      "p": 825
+    },
+    {
+      "t": "[Beatrice-Raws]",
+      "c": "nyaa",
+      "g": "groups",
+      "d": "Эталонные BDRip без сабов",
+      "p": 820
+    },
+    {
+      "t": "[Cleo]",
+      "c": "nyaa",
+      "g": "groups",
+      "d": "Компактные старые сезоны",
+      "p": 815
     },
     {
       "t": "[SubsPlease] Batch",
       "c": "nyaa",
-      "d": "Полный сезон SubsPlease",
+      "g": "batch",
+      "d": "Полный сезон от SubsPlease",
       "p": 830
     },
     {
       "t": "1080p",
       "c": "meta",
-      "d": "Full HD 1920x1080",
+      "g": "video",
+      "d": "Full HD (1920x1080)",
       "p": 990
     },
     {
       "t": "720p",
       "c": "meta",
-      "d": "HD 1280x720",
+      "g": "video",
+      "d": "HD (1280x720)",
       "p": 850
     },
     {
       "t": "2160p",
       "c": "meta",
-      "d": "4K UHD",
+      "g": "video",
+      "d": "4K Ultra HD",
       "p": 820
+    },
+    {
+      "t": "4K",
+      "c": "meta",
+      "g": "video",
+      "d": "4K разрешение",
+      "p": 805
     },
     {
       "t": "HEVC",
       "c": "meta",
-      "d": "Кодек H.265 / x265",
+      "g": "video",
+      "d": "Кодек H.265 (меньше вес)",
       "p": 910
     },
     {
       "t": "x265",
       "c": "meta",
+      "g": "video",
       "d": "Кодек x265",
       "p": 870
     },
     {
+      "t": "AV1",
+      "c": "meta",
+      "g": "video",
+      "d": "Новый ультра-сжатый кодек AV1",
+      "p": 790
+    },
+    {
       "t": "10bit",
       "c": "meta",
-      "d": "10-бит цвет",
+      "g": "video",
+      "d": "10-битный цвет без ступенек",
       "p": 890
-    },
-    {
-      "t": "Batch",
-      "c": "meta",
-      "d": "Весь сезон целиком",
-      "p": 930
-    },
-    {
-      "t": "Dual Audio",
-      "c": "meta",
-      "d": "Две аудиодорожки",
-      "p": 875
     },
     {
       "t": "BD",
       "c": "meta",
-      "d": "Blu-ray рип",
+      "g": "video",
+      "d": "Blu-ray издание (без цензуры ТВ)",
       "p": 865
+    },
+    {
+      "t": "BDRip",
+      "c": "meta",
+      "g": "video",
+      "d": "Рип с Blu-ray диска",
+      "p": 860
+    },
+    {
+      "t": "WEB-DL",
+      "c": "meta",
+      "g": "video",
+      "d": "Прямой поток со стриминга",
+      "p": 855
+    },
+    {
+      "t": "(Uncensored)",
+      "c": "meta",
+      "g": "video",
+      "d": "Версия без цензуры",
+      "p": 895
+    },
+    {
+      "t": "Uncensored",
+      "c": "meta",
+      "g": "video",
+      "d": "Без цензуры",
+      "p": 885
+    },
+    {
+      "t": "Batch",
+      "c": "meta",
+      "g": "batch",
+      "d": "Весь сезон целиком (пачка)",
+      "p": 930
+    },
+    {
+      "t": "Complete",
+      "c": "meta",
+      "g": "batch",
+      "d": "Завершённый сезон / манга",
+      "p": 845
+    },
+    {
+      "t": "Dual Audio",
+      "c": "meta",
+      "g": "batch",
+      "d": "Две дорожки (Яп + Англ)",
+      "p": 875
+    },
+    {
+      "t": "Multi-Subs",
+      "c": "meta",
+      "g": "batch",
+      "d": "Многоязычные субтитры (вкл. Рус)",
+      "p": 840
     },
     {
       "t": "FLAC",
       "c": "meta",
-      "d": "Lossless аудио",
+      "g": "batch",
+      "d": "Звук без потерь (Lossless)",
       "p": 810
+    },
+    {
+      "t": "OST",
+      "c": "meta",
+      "g": "batch",
+      "d": "Саундтрек",
+      "p": 780
     },
     {
       "t": "-chinese",
       "c": "meta",
+      "g": "batch",
       "d": "Исключить китайские релизы",
       "p": 800
-    }
-  ],
-  "booru": [
-    {
-      "t": "1girl",
-      "c": "general",
-      "p": 5000000
-    },
-    {
-      "t": "solo",
-      "c": "general",
-      "p": 4200000
-    },
-    {
-      "t": "long_hair",
-      "c": "general",
-      "p": 3800000
-    },
-    {
-      "t": "short_hair",
-      "c": "general",
-      "p": 2600000
-    },
-    {
-      "t": "highres",
-      "c": "meta",
-      "p": 3900000
-    },
-    {
-      "t": "absurdres",
-      "c": "meta",
-      "p": 2700000
-    },
-    {
-      "t": "breasts",
-      "c": "general",
-      "p": 3500000
-    },
-    {
-      "t": "looking_at_viewer",
-      "c": "general",
-      "p": 3200000
-    },
-    {
-      "t": "blush",
-      "c": "general",
-      "p": 2900000
-    },
-    {
-      "t": "smile",
-      "c": "general",
-      "p": 2800000
-    },
-    {
-      "t": "open_mouth",
-      "c": "general",
-      "p": 2500000
-    },
-    {
-      "t": "blue_eyes",
-      "c": "general",
-      "p": 2200000
-    },
-    {
-      "t": "red_eyes",
-      "c": "general",
-      "p": 2100000
-    },
-    {
-      "t": "blonde_hair",
-      "c": "general",
-      "p": 2300000
-    },
-    {
-      "t": "black_hair",
-      "c": "general",
-      "p": 2250000
-    },
-    {
-      "t": "brown_hair",
-      "c": "general",
-      "p": 2000000
-    },
-    {
-      "t": "white_hair",
-      "c": "general",
-      "p": 1750000
-    },
-    {
-      "t": "silver_hair",
-      "c": "general",
-      "p": 1400000
-    },
-    {
-      "t": "twintails",
-      "c": "general",
-      "p": 1500000
-    },
-    {
-      "t": "ponytail",
-      "c": "general",
-      "p": 1450000
-    },
-    {
-      "t": "thighhighs",
-      "c": "general",
-      "p": 1800000
-    },
-    {
-      "t": "skirt",
-      "c": "general",
-      "p": 1700000
-    },
-    {
-      "t": "dress",
-      "c": "general",
-      "p": 1650000
-    },
-    {
-      "t": "school_uniform",
-      "c": "general",
-      "p": 1550000
-    },
-    {
-      "t": "swimsuit",
-      "c": "general",
-      "p": 1350000
-    },
-    {
-      "t": "bikini",
-      "c": "general",
-      "p": 1300000
-    },
-    {
-      "t": "cat_ears",
-      "c": "general",
-      "p": 1100000
-    },
-    {
-      "t": "animal_ears",
-      "c": "general",
-      "p": 1250000
-    },
-    {
-      "t": "tail",
-      "c": "general",
-      "p": 1050000
-    },
-    {
-      "t": "wings",
-      "c": "general",
-      "p": 900000
-    },
-    {
-      "t": "horns",
-      "c": "general",
-      "p": 850000
-    },
-    {
-      "t": "glasses",
-      "c": "general",
-      "p": 980000
-    },
-    {
-      "t": "monochrome",
-      "c": "meta",
-      "p": 1200000
-    },
-    {
-      "t": "greyscale",
-      "c": "meta",
-      "p": 950000
-    },
-    {
-      "t": "comic",
-      "c": "meta",
-      "p": 900000
-    },
-    {
-      "t": "translated",
-      "c": "meta",
-      "p": 800000
-    },
-    {
-      "t": "1boy",
-      "c": "general",
-      "p": 1400000
-    },
-    {
-      "t": "2girls",
-      "c": "general",
-      "p": 1150000
-    },
-    {
-      "t": "multiple_girls",
-      "c": "general",
-      "p": 1000000
-    },
-    {
-      "t": "elf",
-      "c": "general",
-      "p": 450000
-    },
-    {
-      "t": "maid",
-      "c": "general",
-      "p": 620000
-    },
-    {
-      "t": "witch",
-      "c": "general",
-      "p": 390000
-    },
-    {
-      "t": "demon_girl",
-      "c": "general",
-      "p": 350000
-    },
-    {
-      "t": "fox_girl",
-      "c": "general",
-      "p": 320000
-    },
-    {
-      "t": "stockings",
-      "c": "general",
-      "p": 880000
-    },
-    {
-      "t": "panties",
-      "c": "general",
-      "p": 920000
-    },
-    {
-      "t": "lingerie",
-      "c": "general",
-      "p": 540000
-    },
-    {
-      "t": "nude",
-      "c": "general",
-      "p": 1100000
-    },
-    {
-      "t": "nipples",
-      "c": "general",
-      "p": 1050000
-    },
-    {
-      "t": "uncensored",
-      "c": "meta",
-      "p": 480000
-    },
-    {
-      "t": "order:score",
-      "c": "meta",
-      "d": "Сортировка по рейтингу",
-      "p": 700000
-    },
-    {
-      "t": "order:favcount",
-      "c": "meta",
-      "d": "Сортировка по избранному",
-      "p": 650000
-    },
-    {
-      "t": "rating:general",
-      "c": "meta",
-      "d": "Только SFW",
-      "p": 600000
-    },
-    {
-      "t": "rating:sensitive",
-      "c": "meta",
-      "d": "Чувствительный контент",
-      "p": 550000
-    },
-    {
-      "t": "rating:explicit",
-      "c": "meta",
-      "d": "NSFW",
-      "p": 500000
-    },
-    {
-      "t": "genshin_impact",
-      "c": "copyright",
-      "p": 750000
-    },
-    {
-      "t": "blue_archive",
-      "c": "copyright",
-      "p": 720000
-    },
-    {
-      "t": "honkai:_star_rail",
-      "c": "copyright",
-      "p": 520000
-    },
-    {
-      "t": "frieren_no_sousou",
-      "c": "copyright",
-      "p": 410000
-    },
-    {
-      "t": "touhou",
-      "c": "copyright",
-      "p": 950000
-    },
-    {
-      "t": "fate/grand_order",
-      "c": "copyright",
-      "p": 820000
-    },
-    {
-      "t": "azur_lane",
-      "c": "copyright",
-      "p": 680000
-    },
-    {
-      "t": "hololive",
-      "c": "copyright",
-      "p": 710000
-    },
-    {
-      "t": "original",
-      "c": "copyright",
-      "p": 1600000
     }
   ],
   "hentai": [
     {
       "t": "language:russian",
       "c": "language",
+      "g": "lang",
       "d": "На русском языке",
       "p": 990000
     },
     {
       "t": "language:english",
       "c": "language",
+      "g": "lang",
       "d": "На английском языке",
       "p": 980000
     },
     {
       "t": "language:translated",
       "c": "language",
-      "d": "Переведённые",
+      "g": "lang",
+      "d": "Переведённые работы",
       "p": 970000
     },
     {
       "t": "language:japanese",
       "c": "language",
-      "d": "Оригинал (JP)",
+      "g": "lang",
+      "d": "Японский оригинал (RAW)",
       "p": 900000
     },
     {
       "t": "language:chinese",
       "c": "language",
+      "g": "lang",
       "d": "Китайский перевод",
       "p": 850000
     },
     {
-      "t": "russian",
+      "t": "language:speechless",
       "c": "language",
-      "d": "nhentai: русский",
-      "p": 960000
+      "g": "lang",
+      "d": "Без текста / без слов",
+      "p": 780000
     },
     {
-      "t": "english",
-      "c": "language",
-      "d": "nhentai: английский",
-      "p": 950000
-    },
-    {
-      "t": "translated",
-      "c": "language",
-      "d": "nhentai: перевод",
-      "p": 940000
-    },
-    {
-      "t": "full color",
+      "t": "other:full color",
       "c": "meta",
+      "g": "lang",
       "d": "Полностью в цвете",
+      "p": 895000
+    },
+    {
+      "t": "other:uncensored",
+      "c": "meta",
+      "g": "lang",
+      "d": "Без цензуры (Uncensored)",
       "p": 890000
     },
     {
-      "t": "uncensored",
+      "t": "other:mosaic censorship",
       "c": "meta",
-      "d": "Без цензуры",
-      "p": 880000
-    },
-    {
-      "t": "mosaic censorship",
-      "c": "meta",
-      "d": "Мозаика",
+      "g": "lang",
+      "d": "Мозаичная цензура",
       "p": 720000
     },
     {
-      "t": "sole female",
-      "c": "female",
-      "p": 930000
+      "t": "other:tankoubon",
+      "c": "meta",
+      "g": "lang",
+      "d": "Отдельный том (танкобон)",
+      "p": 760000
     },
     {
-      "t": "sole male",
-      "c": "male",
-      "p": 910000
+      "t": "other:story arc",
+      "c": "meta",
+      "g": "lang",
+      "d": "Полноценный сюжет",
+      "p": 755000
+    },
+    {
+      "t": "other:webtoon",
+      "c": "meta",
+      "g": "lang",
+      "d": "Вертикальный вебтун",
+      "p": 730000
+    },
+    {
+      "t": "other:multi-work series",
+      "c": "meta",
+      "g": "lang",
+      "d": "Часть длинной серии",
+      "p": 740000
+    },
+    {
+      "t": "other:ai generated",
+      "c": "meta",
+      "g": "lang",
+      "d": "Сгенерировано нейросетью (AI)",
+      "p": 600000
     },
     {
       "t": "female:sole female",
       "c": "female",
-      "p": 925000
-    },
-    {
-      "t": "male:sole male",
-      "c": "male",
-      "p": 905000
+      "g": "female",
+      "d": "Одна главная героиня",
+      "p": 930000
     },
     {
       "t": "female:big breasts",
       "c": "female",
-      "p": 870000
+      "g": "female",
+      "d": "Большая грудь",
+      "p": 880000
+    },
+    {
+      "t": "female:huge breasts",
+      "c": "female",
+      "g": "female",
+      "d": "Огромная грудь",
+      "p": 790000
+    },
+    {
+      "t": "female:small breasts",
+      "c": "female",
+      "g": "female",
+      "d": "Маленькая грудь",
+      "p": 760000
     },
     {
       "t": "female:stockings",
       "c": "female",
-      "p": 830000
+      "g": "female",
+      "d": "Чулки",
+      "p": 850000
     },
     {
       "t": "female:pantyhose",
       "c": "female",
-      "p": 780000
+      "g": "female",
+      "d": "Колготки",
+      "p": 800000
     },
     {
       "t": "female:schoolgirl uniform",
       "c": "female",
-      "p": 810000
+      "g": "female",
+      "d": "Школьная форма",
+      "p": 830000
     },
     {
       "t": "female:swimsuit",
       "c": "female",
-      "p": 740000
+      "g": "female",
+      "d": "Купальник",
+      "p": 750000
     },
     {
       "t": "female:bikini",
       "c": "female",
-      "p": 730000
-    },
-    {
-      "t": "female:elf",
-      "c": "female",
-      "p": 710000
-    },
-    {
-      "t": "female:maid",
-      "c": "female",
-      "p": 700000
-    },
-    {
-      "t": "female:kemonomimi",
-      "c": "female",
-      "p": 760000
-    },
-    {
-      "t": "female:catgirl",
-      "c": "female",
-      "p": 690000
-    },
-    {
-      "t": "female:fox girl",
-      "c": "female",
-      "p": 680000
-    },
-    {
-      "t": "female:demon girl",
-      "c": "female",
-      "p": 670000
-    },
-    {
-      "t": "female:monster girl",
-      "c": "female",
-      "p": 660000
-    },
-    {
-      "t": "female:glasses",
-      "c": "female",
-      "p": 750000
-    },
-    {
-      "t": "female:twintails",
-      "c": "female",
-      "p": 650000
-    },
-    {
-      "t": "female:ponytail",
-      "c": "female",
-      "p": 640000
-    },
-    {
-      "t": "female:ahegao",
-      "c": "female",
-      "p": 630000
-    },
-    {
-      "t": "female:nakadashi",
-      "c": "female",
-      "p": 820000
-    },
-    {
-      "t": "female:blowjob",
-      "c": "female",
-      "p": 800000
-    },
-    {
-      "t": "female:paizuri",
-      "c": "female",
-      "p": 770000
-    },
-    {
-      "t": "female:anal",
-      "c": "female",
-      "p": 620000
-    },
-    {
-      "t": "female:yuri",
-      "c": "female",
-      "p": 610000
-    },
-    {
-      "t": "female:milf",
-      "c": "female",
-      "p": 695000
-    },
-    {
-      "t": "female:tall girl",
-      "c": "female",
-      "p": 520000
-    },
-    {
-      "t": "female:muscle",
-      "c": "female",
-      "p": 510000
-    },
-    {
-      "t": "female:dark skin",
-      "c": "female",
-      "p": 685000
-    },
-    {
-      "t": "female:gyaru",
-      "c": "female",
-      "p": 675000
+      "g": "female",
+      "d": "Бикини",
+      "p": 745000
     },
     {
       "t": "female:lingerie",
       "c": "female",
-      "p": 645000
+      "g": "female",
+      "d": "Красивое нижнее бельё",
+      "p": 735000
     },
     {
-      "t": "female:collar",
+      "t": "female:maid",
       "c": "female",
-      "p": 580000
+      "g": "female",
+      "d": "Горничная (мейдочка)",
+      "p": 770000
     },
     {
-      "t": "female:lactation",
+      "t": "female:nurse",
       "c": "female",
-      "p": 560000
+      "g": "female",
+      "d": "Медсестра",
+      "p": 680000
     },
     {
-      "t": "female:mind break",
+      "t": "female:nun",
       "c": "female",
-      "p": 550000
+      "g": "female",
+      "d": "Монахиня",
+      "p": 670000
     },
     {
-      "t": "female:corruption",
+      "t": "female:miko",
       "c": "female",
-      "p": 540000
+      "g": "female",
+      "d": "Жрица храма (мико)",
+      "p": 665000
+    },
+    {
+      "t": "female:bunny girl",
+      "c": "female",
+      "g": "female",
+      "d": "Костюм кролика",
+      "p": 715000
+    },
+    {
+      "t": "female:elf",
+      "c": "female",
+      "g": "female",
+      "d": "Эльфийка",
+      "p": 785000
+    },
+    {
+      "t": "female:dark skin",
+      "c": "female",
+      "g": "female",
+      "d": "Смуглая / тёмная кожа",
+      "p": 780000
+    },
+    {
+      "t": "female:tanlines",
+      "c": "female",
+      "g": "female",
+      "d": "Следы от загара",
+      "p": 710000
+    },
+    {
+      "t": "female:gyaru",
+      "c": "female",
+      "g": "female",
+      "d": "Гяру (модница / блондинка)",
+      "p": 775000
+    },
+    {
+      "t": "female:milf",
+      "c": "female",
+      "g": "female",
+      "d": "Зрелая женщина / мама (MILF)",
+      "p": 815000
+    },
+    {
+      "t": "female:tall girl",
+      "c": "female",
+      "g": "female",
+      "d": "Высокая девушка",
+      "p": 640000
+    },
+    {
+      "t": "female:kemonomimi",
+      "c": "female",
+      "g": "female",
+      "d": "Девушка со звериными ушками",
+      "p": 765000
+    },
+    {
+      "t": "female:catgirl",
+      "c": "female",
+      "g": "female",
+      "d": "Кошкодевочка (нэко)",
+      "p": 725000
+    },
+    {
+      "t": "female:fox girl",
+      "c": "female",
+      "g": "female",
+      "d": "Девушка-лисица (кицунэ)",
+      "p": 705000
+    },
+    {
+      "t": "female:demon girl",
+      "c": "female",
+      "g": "female",
+      "d": "Демоница / суккуб",
+      "p": 720000
+    },
+    {
+      "t": "female:monster girl",
+      "c": "female",
+      "g": "female",
+      "d": "Девушка-монстр",
+      "p": 695000
+    },
+    {
+      "t": "female:glasses",
+      "c": "female",
+      "g": "female",
+      "d": "В очках",
+      "p": 755000
+    },
+    {
+      "t": "female:twintails",
+      "c": "female",
+      "g": "female",
+      "d": "Два хвостика",
+      "p": 700000
+    },
+    {
+      "t": "female:ponytail",
+      "c": "female",
+      "g": "female",
+      "d": "Конский хвост",
+      "p": 690000
+    },
+    {
+      "t": "female:tomboy",
+      "c": "female",
+      "g": "female",
+      "d": "Пацанка (томбой)",
+      "p": 685000
+    },
+    {
+      "t": "female:sister",
+      "c": "female",
+      "g": "female",
+      "d": "Сестра",
+      "p": 730000
+    },
+    {
+      "t": "female:mother",
+      "c": "female",
+      "g": "female",
+      "d": "Мать",
+      "p": 710000
+    },
+    {
+      "t": "female:futanari",
+      "c": "female",
+      "g": "female",
+      "d": "Футанари",
+      "p": 660000
+    },
+    {
+      "t": "female:nakadashi",
+      "c": "female",
+      "g": "fetish",
+      "d": "Внутрь (камшот внутри)",
+      "p": 860000
+    },
+    {
+      "t": "female:blowjob",
+      "c": "female",
+      "g": "fetish",
+      "d": "Минет (оральный)",
+      "p": 840000
+    },
+    {
+      "t": "female:paizuri",
+      "c": "female",
+      "g": "fetish",
+      "d": "Между грудей (пайдзури)",
+      "p": 810000
+    },
+    {
+      "t": "female:anal",
+      "c": "female",
+      "g": "fetish",
+      "d": "Анал",
+      "p": 740000
+    },
+    {
+      "t": "female:ahegao",
+      "c": "female",
+      "g": "fetish",
+      "d": "Ахегао (экстаз на лице)",
+      "p": 795000
+    },
+    {
+      "t": "female:defloration",
+      "c": "female",
+      "g": "fetish",
+      "d": "Лишение девственности (первый раз)",
+      "p": 790000
+    },
+    {
+      "t": "female:femdom",
+      "c": "female",
+      "g": "fetish",
+      "d": "Доминирование девушки (Фемдом)",
+      "p": 780000
     },
     {
       "t": "female:netorare",
       "c": "female",
-      "p": 590000
+      "g": "fetish",
+      "d": "Измена / NTR (Нетораре)",
+      "p": 775000
+    },
+    {
+      "t": "female:cheating",
+      "c": "female",
+      "g": "fetish",
+      "d": "Неверность / измена",
+      "p": 730000
     },
     {
       "t": "female:harem",
       "c": "female",
-      "p": 600000
+      "g": "fetish",
+      "d": "Гарем (много девушек)",
+      "p": 760000
     },
     {
       "t": "female:ffm threesome",
       "c": "female",
-      "p": 595000
+      "g": "fetish",
+      "d": "Тройничок (Ж+Ж+М)",
+      "p": 750000
     },
     {
-      "t": "male:yaoi",
-      "c": "male",
+      "t": "female:mmf threesome",
+      "c": "female",
+      "g": "fetish",
+      "d": "Тройничок (М+М+Ж)",
+      "p": 680000
+    },
+    {
+      "t": "female:group",
+      "c": "female",
+      "g": "fetish",
+      "d": "Групповой",
+      "p": 745000
+    },
+    {
+      "t": "female:yuri",
+      "c": "female",
+      "g": "fetish",
+      "d": "Юри (девушка с девушкой)",
+      "p": 720000
+    },
+    {
+      "t": "female:handjob",
+      "c": "female",
+      "g": "fetish",
+      "d": "Работа руками",
+      "p": 710000
+    },
+    {
+      "t": "female:footjob",
+      "c": "female",
+      "g": "fetish",
+      "d": "Работа ножками / ступнями",
+      "p": 675000
+    },
+    {
+      "t": "female:bondage",
+      "c": "female",
+      "g": "fetish",
+      "d": "Связывание (бондаж)",
+      "p": 690000
+    },
+    {
+      "t": "female:collar",
+      "c": "female",
+      "g": "fetish",
+      "d": "Ошейник",
       "p": 650000
     },
     {
-      "t": "male:shotacon",
+      "t": "female:mind break",
+      "c": "female",
+      "g": "fetish",
+      "d": "Слом рассудка (Mind Break)",
+      "p": 685000
+    },
+    {
+      "t": "female:mind control",
+      "c": "female",
+      "g": "fetish",
+      "d": "Гипноз / контроль разума",
+      "p": 680000
+    },
+    {
+      "t": "female:corruption",
+      "c": "female",
+      "g": "fetish",
+      "d": "Развращение / падение",
+      "p": 660000
+    },
+    {
+      "t": "female:lactation",
+      "c": "female",
+      "g": "fetish",
+      "d": "Лактация (грудное молоко)",
+      "p": 655000
+    },
+    {
+      "t": "female:pregnant",
+      "c": "female",
+      "g": "fetish",
+      "d": "Беременность",
+      "p": 630000
+    },
+    {
+      "t": "female:impregnation",
+      "c": "female",
+      "g": "fetish",
+      "d": "Оплодотворение",
+      "p": 715000
+    },
+    {
+      "t": "female:x-ray",
+      "c": "female",
+      "g": "fetish",
+      "d": "Вид в разрезе (X-Ray)",
+      "p": 725000
+    },
+    {
+      "t": "other:incest",
+      "c": "meta",
+      "g": "fetish",
+      "d": "Инцест (родственники)",
+      "p": 735000
+    },
+    {
+      "t": "male:sole male",
       "c": "male",
-      "p": 640000
+      "g": "male",
+      "d": "Один главный герой",
+      "p": 910000
+    },
+    {
+      "t": "male:big penis",
+      "c": "male",
+      "g": "male",
+      "d": "Большой размер",
+      "p": 780000
     },
     {
       "t": "male:dilf",
       "c": "male",
-      "p": 570000
+      "g": "male",
+      "d": "Зрелый мужчина / дядя",
+      "p": 680000
     },
     {
-      "t": "male:tall man",
+      "t": "male:glasses",
       "c": "male",
-      "p": 500000
+      "g": "male",
+      "d": "Мужчина в очках",
+      "p": 640000
+    },
+    {
+      "t": "male:muscle",
+      "c": "male",
+      "g": "male",
+      "d": "Мускулистый мужчина",
+      "p": 660000
+    },
+    {
+      "t": "male:dark skin",
+      "c": "male",
+      "g": "male",
+      "d": "Темнокожий мужчина",
+      "p": 670000
+    },
+    {
+      "t": "male:bbm",
+      "c": "male",
+      "g": "male",
+      "d": "Толстяк (BBM / Ugly Bastard)",
+      "p": 650000
     },
     {
       "t": "male:monster",
       "c": "male",
-      "p": 530000
+      "g": "male",
+      "d": "Монстр",
+      "p": 620000
     },
     {
       "t": "male:orc",
       "c": "male",
-      "p": 490000
+      "g": "male",
+      "d": "Орк",
+      "p": 610000
+    },
+    {
+      "t": "male:goblin",
+      "c": "male",
+      "g": "male",
+      "d": "Гоблин",
+      "p": 605000
     },
     {
       "t": "male:tentacles",
       "c": "male",
-      "p": 520000
+      "g": "male",
+      "d": "Тентакли (щупальца)",
+      "p": 630000
+    },
+    {
+      "t": "male:crossdressing",
+      "c": "male",
+      "g": "male",
+      "d": "Трап / переодевание",
+      "p": 645000
+    },
+    {
+      "t": "male:yaoi",
+      "c": "male",
+      "g": "male",
+      "d": "Яой (М+М)",
+      "p": 655000
     },
     {
       "t": "parody:original",
       "c": "parody",
+      "g": "parody",
+      "d": "Оригинальная работа (не фанфик)",
       "p": 890000
     },
     {
       "t": "parody:genshin impact",
       "c": "parody",
-      "p": 760000
+      "g": "parody",
+      "d": "Genshin Impact",
+      "p": 800000
     },
     {
       "t": "parody:blue archive",
       "c": "parody",
-      "p": 740000
+      "g": "parody",
+      "d": "Blue Archive",
+      "p": 790000
     },
     {
       "t": "parody:fate grand order",
       "c": "parody",
-      "p": 780000
+      "g": "parody",
+      "d": "Fate/Grand Order (FGO)",
+      "p": 785000
+    },
+    {
+      "t": "parody:honkai star rail",
+      "c": "parody",
+      "g": "parody",
+      "d": "Honkai: Star Rail",
+      "p": 760000
+    },
+    {
+      "t": "parody:zenless zone zero",
+      "c": "parody",
+      "g": "parody",
+      "d": "Zenless Zone Zero (ZZZ)",
+      "p": 755000
     },
     {
       "t": "parody:touhou project",
       "c": "parody",
+      "g": "parody",
+      "d": "Touhou Project",
       "p": 770000
     },
     {
       "t": "parody:azur lane",
       "c": "parody",
-      "p": 710000
+      "g": "parody",
+      "d": "Azur Lane",
+      "p": 740000
     },
     {
       "t": "parody:kantai collection",
       "c": "parody",
-      "p": 720000
+      "g": "parody",
+      "d": "KanColle (Флотская коллекция)",
+      "p": 730000
+    },
+    {
+      "t": "parody:goddess of victory nikke",
+      "c": "parody",
+      "g": "parody",
+      "d": "NIKKE",
+      "p": 725000
     },
     {
       "t": "parody:sousou no frieren",
       "c": "parody",
-      "p": 620000
+      "g": "parody",
+      "d": "Провожающая в последний путь Фрирен",
+      "p": 720000
     },
     {
       "t": "parody:chainsaw man",
       "c": "parody",
-      "p": 600000
+      "g": "parody",
+      "d": "Человек-бензопила",
+      "p": 690000
     },
     {
       "t": "parody:spy x family",
       "c": "parody",
-      "p": 580000
+      "g": "parody",
+      "d": "Семья шпиона",
+      "p": 680000
     },
     {
-      "t": "artist:",
-      "c": "artist",
-      "d": "Префикс автора",
-      "p": 995000
-    },
-    {
-      "t": "group:",
-      "c": "group",
-      "d": "Префикс кружка",
-      "p": 994000
-    },
-    {
-      "t": "parody:",
+      "t": "parody:naruto",
       "c": "parody",
-      "d": "Префикс пародии",
-      "p": 993000
+      "g": "parody",
+      "d": "Наруто",
+      "p": 710000
     },
     {
-      "t": "character:",
-      "c": "character",
-      "d": "Префикс персонажа",
-      "p": 992000
+      "t": "parody:one piece",
+      "c": "parody",
+      "g": "parody",
+      "d": "Ван-Пис",
+      "p": 705000
     },
     {
-      "t": "female:",
-      "c": "female",
-      "d": "Женский тег",
-      "p": 991000
+      "t": "parody:bleach",
+      "c": "parody",
+      "g": "parody",
+      "d": "Блич",
+      "p": 670000
     },
     {
-      "t": "male:",
-      "c": "male",
-      "d": "Мужской тег",
+      "t": "parody:hololive",
+      "c": "parody",
+      "g": "parody",
+      "d": "Hololive (Витуберы)",
+      "p": 715000
+    }
+  ],
+  "booru": [
+    {
+      "t": "1girl",
+      "c": "general",
+      "g": "char",
+      "d": "Одна девушка в кадре",
+      "p": 5000000
+    },
+    {
+      "t": "solo",
+      "c": "general",
+      "g": "char",
+      "d": "Один персонаж (соло)",
+      "p": 4200000
+    },
+    {
+      "t": "2girls",
+      "c": "general",
+      "g": "char",
+      "d": "Две девушки",
+      "p": 1150000
+    },
+    {
+      "t": "multiple_girls",
+      "c": "general",
+      "g": "char",
+      "d": "Несколько девушек",
+      "p": 1000000
+    },
+    {
+      "t": "1boy",
+      "c": "general",
+      "g": "char",
+      "d": "Один парень",
+      "p": 1400000
+    },
+    {
+      "t": "long_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Длинные волосы",
+      "p": 3800000
+    },
+    {
+      "t": "short_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Короткие волосы",
+      "p": 2600000
+    },
+    {
+      "t": "blonde_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Блондинка",
+      "p": 2300000
+    },
+    {
+      "t": "black_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Чёрные волосы",
+      "p": 2250000
+    },
+    {
+      "t": "brown_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Каштановые волосы",
+      "p": 2000000
+    },
+    {
+      "t": "white_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Белые волосы",
+      "p": 1750000
+    },
+    {
+      "t": "silver_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Серебристые волосы",
+      "p": 1400000
+    },
+    {
+      "t": "pink_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Розовые волосы",
+      "p": 1350000
+    },
+    {
+      "t": "blue_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Синие / голубые волосы",
+      "p": 1300000
+    },
+    {
+      "t": "red_hair",
+      "c": "general",
+      "g": "char",
+      "d": "Рыжие / красные волосы",
+      "p": 1100000
+    },
+    {
+      "t": "twintails",
+      "c": "general",
+      "g": "char",
+      "d": "Два хвостика",
+      "p": 1500000
+    },
+    {
+      "t": "ponytail",
+      "c": "general",
+      "g": "char",
+      "d": "Конский хвост",
+      "p": 1450000
+    },
+    {
+      "t": "blue_eyes",
+      "c": "general",
+      "g": "char",
+      "d": "Голубые глаза",
+      "p": 2200000
+    },
+    {
+      "t": "red_eyes",
+      "c": "general",
+      "g": "char",
+      "d": "Красные глаза",
+      "p": 2100000
+    },
+    {
+      "t": "green_eyes",
+      "c": "general",
+      "g": "char",
+      "d": "Зелёные глаза",
+      "p": 1600000
+    },
+    {
+      "t": "yellow_eyes",
+      "c": "general",
+      "g": "char",
+      "d": "Жёлтые / золотые глаза",
+      "p": 1500000
+    },
+    {
+      "t": "purple_eyes",
+      "c": "general",
+      "g": "char",
+      "d": "Фиолетовые глаза",
+      "p": 1450000
+    },
+    {
+      "t": "looking_at_viewer",
+      "c": "general",
+      "g": "char",
+      "d": "Смотрит прямо на зрителя",
+      "p": 3200000
+    },
+    {
+      "t": "blush",
+      "c": "general",
+      "g": "char",
+      "d": "Румянец / смущение",
+      "p": 2900000
+    },
+    {
+      "t": "smile",
+      "c": "general",
+      "g": "char",
+      "d": "Улыбка",
+      "p": 2800000
+    },
+    {
+      "t": "open_mouth",
+      "c": "general",
+      "g": "char",
+      "d": "Приоткрытый рот",
+      "p": 2500000
+    },
+    {
+      "t": "breasts",
+      "c": "general",
+      "g": "char",
+      "d": "Грудь",
+      "p": 3500000
+    },
+    {
+      "t": "large_breasts",
+      "c": "general",
+      "g": "char",
+      "d": "Большая грудь",
+      "p": 2400000
+    },
+    {
+      "t": "medium_breasts",
+      "c": "general",
+      "g": "char",
+      "d": "Средняя грудь",
+      "p": 1800000
+    },
+    {
+      "t": "small_breasts",
+      "c": "general",
+      "g": "char",
+      "d": "Маленькая грудь",
+      "p": 1400000
+    },
+    {
+      "t": "animal_ears",
+      "c": "general",
+      "g": "char",
+      "d": "Звериные ушки",
+      "p": 1250000
+    },
+    {
+      "t": "cat_ears",
+      "c": "general",
+      "g": "char",
+      "d": "Кошачьи ушки",
+      "p": 1100000
+    },
+    {
+      "t": "fox_ears",
+      "c": "general",
+      "g": "char",
+      "d": "Лисьи ушки",
+      "p": 750000
+    },
+    {
+      "t": "elf",
+      "c": "general",
+      "g": "char",
+      "d": "Эльфийка (острые уши)",
+      "p": 650000
+    },
+    {
+      "t": "tail",
+      "c": "general",
+      "g": "char",
+      "d": "Хвост",
+      "p": 1050000
+    },
+    {
+      "t": "wings",
+      "c": "general",
+      "g": "char",
+      "d": "Крылья",
+      "p": 900000
+    },
+    {
+      "t": "horns",
+      "c": "general",
+      "g": "char",
+      "d": "Рожки",
+      "p": 850000
+    },
+    {
+      "t": "dark_skin",
+      "c": "general",
+      "g": "char",
+      "d": "Смуглая / тёмная кожа",
+      "p": 820000
+    },
+    {
+      "t": "thighhighs",
+      "c": "general",
+      "g": "attire",
+      "d": "Чулки выше колена",
+      "p": 1800000
+    },
+    {
+      "t": "pantyhose",
+      "c": "general",
+      "g": "attire",
+      "d": "Колготки",
+      "p": 950000
+    },
+    {
+      "t": "skirt",
+      "c": "general",
+      "g": "attire",
+      "d": "Юбка",
+      "p": 1700000
+    },
+    {
+      "t": "dress",
+      "c": "general",
+      "g": "attire",
+      "d": "Платье",
+      "p": 1650000
+    },
+    {
+      "t": "school_uniform",
+      "c": "general",
+      "g": "attire",
+      "d": "Школьная форма",
+      "p": 1550000
+    },
+    {
+      "t": "serafuku",
+      "c": "general",
+      "g": "attire",
+      "d": "Матроска (японская форма)",
+      "p": 980000
+    },
+    {
+      "t": "swimsuit",
+      "c": "general",
+      "g": "attire",
+      "d": "Купальник",
+      "p": 1350000
+    },
+    {
+      "t": "bikini",
+      "c": "general",
+      "g": "attire",
+      "d": "Бикини",
+      "p": 1300000
+    },
+    {
+      "t": "maid",
+      "c": "general",
+      "g": "attire",
+      "d": "Костюм горничной",
+      "p": 820000
+    },
+    {
+      "t": "glasses",
+      "c": "general",
+      "g": "attire",
+      "d": "Очки",
+      "p": 980000
+    },
+    {
+      "t": "gloves",
+      "c": "general",
+      "g": "attire",
+      "d": "Перчатки",
+      "p": 1400000
+    },
+    {
+      "t": "panties",
+      "c": "general",
+      "g": "attire",
+      "d": "Трусики",
+      "p": 1120000
+    },
+    {
+      "t": "bra",
+      "c": "general",
+      "g": "attire",
+      "d": "Бюстгальтер",
+      "p": 860000
+    },
+    {
+      "t": "lingerie",
+      "c": "general",
+      "g": "attire",
+      "d": "Нижнее бельё",
+      "p": 740000
+    },
+    {
+      "t": "nude",
+      "c": "general",
+      "g": "attire",
+      "d": "Обнажённая (Nude)",
+      "p": 1100000
+    },
+    {
+      "t": "nipples",
+      "c": "general",
+      "g": "attire",
+      "d": "Соски",
+      "p": 1050000
+    },
+    {
+      "t": "ass",
+      "c": "general",
+      "g": "attire",
+      "d": "Вид сзади / ягодицы",
       "p": 990000
     },
     {
-      "t": "language:",
-      "c": "language",
-      "d": "Язык",
-      "p": 989000
+      "t": "original",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Оригинальный арт",
+      "p": 1600000
     },
     {
-      "t": "other:",
+      "t": "touhou",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Touhou Project",
+      "p": 950000
+    },
+    {
+      "t": "fate/grand_order",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Fate/Grand Order",
+      "p": 820000
+    },
+    {
+      "t": "genshin_impact",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Genshin Impact",
+      "p": 800000
+    },
+    {
+      "t": "blue_archive",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Blue Archive",
+      "p": 780000
+    },
+    {
+      "t": "hololive",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Hololive",
+      "p": 740000
+    },
+    {
+      "t": "azur_lane",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Azur Lane",
+      "p": 710000
+    },
+    {
+      "t": "kantai_collection",
+      "c": "copyright",
+      "g": "copy",
+      "d": "KanColle",
+      "p": 700000
+    },
+    {
+      "t": "honkai:_star_rail",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Honkai: Star Rail",
+      "p": 650000
+    },
+    {
+      "t": "zenless_zone_zero",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Zenless Zone Zero",
+      "p": 620000
+    },
+    {
+      "t": "frieren_no_sousou",
+      "c": "copyright",
+      "g": "copy",
+      "d": "Фрирен (Sousou no Frieren)",
+      "p": 580000
+    },
+    {
+      "t": "goddess_of_victory:_nikke",
+      "c": "copyright",
+      "g": "copy",
+      "d": "NIKKE",
+      "p": 560000
+    },
+    {
+      "t": "highres",
       "c": "meta",
-      "d": "Прочие теги",
-      "p": 988000
+      "g": "meta",
+      "d": "Высокое разрешение (HD)",
+      "p": 3900000
+    },
+    {
+      "t": "absurdres",
+      "c": "meta",
+      "g": "meta",
+      "d": "Сверхвысокое разрешение (4K+)",
+      "p": 2700000
+    },
+    {
+      "t": "uncensored",
+      "c": "meta",
+      "g": "meta",
+      "d": "Без цензуры",
+      "p": 880000
+    },
+    {
+      "t": "monochrome",
+      "c": "meta",
+      "g": "meta",
+      "d": "Чёрно-белое",
+      "p": 1200000
+    },
+    {
+      "t": "comic",
+      "c": "meta",
+      "g": "meta",
+      "d": "Комикс / манга-стрип",
+      "p": 900000
+    },
+    {
+      "t": "translated",
+      "c": "meta",
+      "g": "meta",
+      "d": "С переводом",
+      "p": 800000
+    },
+    {
+      "t": "order:score",
+      "c": "meta",
+      "g": "meta",
+      "d": "Сортировка по лучшему рейтингу",
+      "p": 750000
+    },
+    {
+      "t": "order:favcount",
+      "c": "meta",
+      "g": "meta",
+      "d": "Сортировка по числу избранного",
+      "p": 700000
+    },
+    {
+      "t": "rating:general",
+      "c": "meta",
+      "g": "meta",
+      "d": "Безопасный контент (SFW)",
+      "p": 650000
+    },
+    {
+      "t": "rating:sensitive",
+      "c": "meta",
+      "g": "meta",
+      "d": "Лёгкая эротика (Ecchi)",
+      "p": 600000
+    },
+    {
+      "t": "rating:explicit",
+      "c": "meta",
+      "g": "meta",
+      "d": "Откровенный контент (18+ NSFW)",
+      "p": 580000
+    },
+    {
+      "t": "-animated",
+      "c": "meta",
+      "g": "meta",
+      "d": "Скрыть видео и гифки",
+      "p": 550000
     }
   ]
 }

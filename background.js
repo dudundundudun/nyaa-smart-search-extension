@@ -13,25 +13,47 @@ const SITE_DEFAULT_PROFILES = {
     ]
   },
   "nhentai.net": {
-    chips: ["russian", "english", "translated", "full color", "uncensored", "sole female", "sole male", "-yaoi"],
+    chips: [
+      "russian", "english", "translated", "\"full color\"", "uncensored",
+      "\"sole female\"", "\"sole male\"", "\"big breasts\"", "stockings",
+      "nakadashi", "milf", "ahegao", "-yaoi"
+    ],
     favorites: [
       { id: "fav_nh_1", text: "russian translated", category: "", filter: "", addedAt: 1700000000010 },
-      { id: "fav_nh_2", text: "english full color uncensored", category: "", filter: "", addedAt: 1700000000011 }
+      { id: "fav_nh_2", text: "english \"full color\" uncensored", category: "", filter: "", addedAt: 1700000000011 }
     ],
     history: []
   },
   "exhentai.org": {
-    chips: ["language:russian", "language:english", "language:translated", "female:", "artist:", "parody:", "-male:yaoi"],
+    chips: [
+      "language:russian$", "language:english$", "language:translated$",
+      "other:uncensored$", "other:\"full color$\"", "female:\"sole female$\"",
+      "male:\"sole male$\"", "female:\"big breasts$\"", "female:stockings$",
+      "female:nakadashi$", "female:milf$", "-male:yaoi$"
+    ],
     favorites: [
       { id: "fav_eh_1", text: "language:russian$", category: "", filter: "", addedAt: 1700000000020 },
-      { id: "fav_eh_2", text: "language:english$ language:translated$", category: "", filter: "", addedAt: 1700000000021 }
+      { id: "fav_eh_2", text: "language:english$ language:translated$ other:uncensored$", category: "", filter: "", addedAt: 1700000000021 }
     ],
     history: []
   },
   "danbooru.donmai.us": {
-    chips: ["1girl", "solo", "highres", "absurdres", "order:score", "rating:general", "-animated"],
+    chips: [
+      "1girl", "solo", "highres", "absurdres", "long_hair", "breasts",
+      "looking_at_viewer", "blush", "thighhighs", "order:score", "rating:general", "-animated"
+    ],
     favorites: [
       { id: "fav_db_1", text: "1girl solo highres order:score", category: "", filter: "", addedAt: 1700000000030 }
+    ],
+    history: []
+  },
+  "gelbooru.com": {
+    chips: [
+      "1girl", "solo", "highres", "absurdres", "long_hair", "breasts",
+      "looking_at_viewer", "thighhighs", "uncensored", "sort:score:desc", "-animated"
+    ],
+    favorites: [
+      { id: "fav_gb_1", text: "1girl solo highres sort:score:desc", category: "", filter: "", addedAt: 1700000000040 }
     ],
     history: []
   }
@@ -43,7 +65,8 @@ const DEFAULT_DATA = {
     "nyaa.si": SITE_DEFAULT_PROFILES["nyaa.si"],
     "nhentai.net": SITE_DEFAULT_PROFILES["nhentai.net"],
     "exhentai.org": SITE_DEFAULT_PROFILES["exhentai.org"],
-    "danbooru.donmai.us": SITE_DEFAULT_PROFILES["danbooru.donmai.us"]
+    "danbooru.donmai.us": SITE_DEFAULT_PROFILES["danbooru.donmai.us"],
+    "gelbooru.com": SITE_DEFAULT_PROFILES["gelbooru.com"]
   },
   customSelectors: {},
   settings: {
@@ -60,6 +83,23 @@ function getProfileKey(hostname) {
     return "exhentai.org";
   }
   return host;
+}
+
+function getDefaultProfileForKey(key) {
+  if (SITE_DEFAULT_PROFILES[key]) {
+    return JSON.parse(JSON.stringify(SITE_DEFAULT_PROFILES[key]));
+  }
+  if (key.includes("booru") || key.includes("rule34") || key.includes("yande") || key.includes("konachan")) {
+    return JSON.parse(JSON.stringify(SITE_DEFAULT_PROFILES["danbooru.donmai.us"]));
+  }
+  if (key.includes("hentai") || key.includes("hitomi") || key.includes("pururin")) {
+    return JSON.parse(JSON.stringify(SITE_DEFAULT_PROFILES["nhentai.net"]));
+  }
+  return {
+    chips: ["1080p", "Russian", "English", "Uncensored", "Full Color"],
+    favorites: [],
+    history: []
+  };
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -81,12 +121,22 @@ chrome.runtime.onInstalled.addListener(async () => {
     if (!siteProfiles[key]) {
       if (key === "nyaa.si" && (Array.isArray(stored.chips) || Array.isArray(stored.favorites))) {
         siteProfiles[key] = {
-          chips: Array.isArray(stored.chips) ? stored.chips : defProfile.chips,
-          favorites: Array.isArray(stored.favorites) ? stored.favorites : defProfile.favorites,
+          chips: Array.isArray(stored.chips) && stored.chips.length ? stored.chips : defProfile.chips,
+          favorites: Array.isArray(stored.favorites) && stored.favorites.length ? stored.favorites : defProfile.favorites,
           history: Array.isArray(stored.history) ? stored.history : defProfile.history
         };
       } else {
-        siteProfiles[key] = defProfile;
+        siteProfiles[key] = JSON.parse(JSON.stringify(defProfile));
+      }
+    } else {
+      // Fix empty chips or broken namespace-only chips from v1.0 / v2.0
+      const curChips = siteProfiles[key].chips || [];
+      const hasBrokenNsChip = key === "exhentai.org" && curChips.some(c => c.endsWith(":"));
+      if (curChips.length === 0 || hasBrokenNsChip) {
+        siteProfiles[key].chips = [...defProfile.chips];
+      }
+      if (!Array.isArray(siteProfiles[key].favorites) || siteProfiles[key].favorites.length === 0) {
+        siteProfiles[key].favorites = [...defProfile.favorites];
       }
     }
   }
@@ -118,7 +168,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const key = getProfileKey(hostname);
     const { siteProfiles = {} } = await chrome.storage.local.get(["siteProfiles"]);
     if (!siteProfiles[key]) {
-      siteProfiles[key] = SITE_DEFAULT_PROFILES[key] || { chips: [], favorites: [], history: [] };
+      siteProfiles[key] = getDefaultProfileForKey(key);
     }
 
     if (info.menuItemId === "add-selection-to-favorites") {

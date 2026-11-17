@@ -42,6 +42,8 @@ async function initPopup() {
   const settings = data.settings || { pageTagHover: true };
 
   document.getElementById("hover-collect-toggle").checked = settings.pageTagHover !== false;
+  const ruToggle = document.getElementById("ru-translate-toggle");
+  if (ruToggle) ruToggle.checked = settings.showRuTranslations !== false;
   const customTags = Array.isArray(data.customTagDatabase) ? data.customTagDatabase : [];
   document.getElementById("custom-db-count").textContent = `${customTags.length.toLocaleString("ru-RU")} тегов`;
 
@@ -82,8 +84,19 @@ document.getElementById("site-toggle").addEventListener("change", async (e) => {
   let updated;
   if (e.target.checked) {
     updated = enabledDomains.includes(currentHost) ? enabledDomains : [...enabledDomains, currentHost];
-    if (!siteProfiles[currentProfileKey]) {
-      siteProfiles[currentProfileKey] = { chips: [], favorites: [], history: [] };
+    if (!siteProfiles[currentProfileKey] || !Array.isArray(siteProfiles[currentProfileKey].chips) || siteProfiles[currentProfileKey].chips.length === 0) {
+      const defChips = currentProfileKey.includes("exhentai")
+        ? ["language:russian$", "language:english$", "language:translated$", "other:uncensored$", "other:\"full color$\"", "female:\"sole female$\"", "male:\"sole male$\"", "female:\"big breasts$\"", "-male:yaoi$"]
+        : currentProfileKey.includes("nhentai")
+        ? ["russian", "english", "translated", "\"full color\"", "uncensored", "\"sole female\"", "\"sole male\"", "\"big breasts\"", "-yaoi"]
+        : currentProfileKey.includes("booru")
+        ? ["1girl", "solo", "highres", "absurdres", "long_hair", "breasts", "order:score", "-animated"]
+        : ["1080p", "Russian", "English", "Uncensored", "Full Color"];
+      siteProfiles[currentProfileKey] = {
+        chips: defChips,
+        favorites: siteProfiles[currentProfileKey]?.favorites || [],
+        history: siteProfiles[currentProfileKey]?.history || []
+      };
       await chrome.storage.local.set({ siteProfiles });
     }
     document.getElementById("domain-status").textContent = `Отдельная база (${currentProfileKey})`;
@@ -248,3 +261,10 @@ document.getElementById("import-file").addEventListener("change", (e) => {
 });
 
 initPopup();
+
+document.getElementById("ru-translate-toggle")?.addEventListener("change", async (e) => {
+  const { settings = {} } = await chrome.storage.local.get(["settings"]);
+  settings.showRuTranslations = e.target.checked;
+  await chrome.storage.local.set({ settings });
+  showStatus(e.target.checked ? "Русский перевод включён" : "Русский перевод скрыт");
+});

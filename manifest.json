@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Smart Search Favorites & Bar (v2.0 Tag DB Edition)",
-  "version": "2.0.0",
-  "description": "Умная панель поиска с оффлайн-базой тегов (Nyaa, Danbooru, ExHentai, nhentai), автодополнением по последнему слову, 3-состоянием чипсов и сбором тегов кликом.",
+  "name": "Smart Search Favorites & Bar (v3.0 World-Class Mouse Edition)",
+  "version": "3.0.0",
+  "description": "Панель поиска мирового уровня для управления мышкой: капсулы текущего запроса, самообучающиеся топ-теги, вкладки категорий с русским переводом и быстрые фильтры.",
   "permissions": [
     "storage",
     "unlimitedStorage",

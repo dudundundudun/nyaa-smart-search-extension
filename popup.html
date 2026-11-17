@@ -7,7 +7,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      width: 360px;
+      width: 380px;
       background: #1a1a1a;
       color: #e5e5e5;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -17,7 +17,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 14px;
+      padding: 11px 14px;
       background: #242424;
       border-bottom: 1px solid #333;
     }
@@ -37,7 +37,7 @@
       box-shadow: 0 0 8px #ed2553;
     }
     .section {
-      padding: 11px 14px;
+      padding: 10px 14px;
       border-bottom: 1px solid #2c2c2c;
     }
     .toggle-row {
@@ -93,33 +93,53 @@
       color: #ddd;
       border: 1px solid #3f3f3f;
       border-radius: 5px;
-      padding: 7px 10px;
+      padding: 6px 10px;
       font-size: 12px;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 7px;
       text-align: center;
       transition: background 0.12s;
     }
     .btn-full:hover { background: #383838; color: #fff; }
     .btn-danger:hover { background: #4a1c26; color: #ff809b; border-color: #7a293b; }
-    .fav-preview {
-      max-height: 120px;
-      overflow-y: auto;
-      margin-top: 8px;
-      border: 1px solid #2e2e2e;
-      border-radius: 4px;
-      background: #141414;
+
+    /* Block Constructor in Popup */
+    .block-list {
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
-    .fav-item {
+    .block-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 5px 8px;
-      border-bottom: 1px solid #242424;
+      background: #232327;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 4px 8px;
       font-size: 12px;
     }
-    .fav-item:last-child { border-bottom: none; }
-    .fav-star { color: #f5b942; margin-right: 5px; }
+    .block-item label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      flex: 1;
+    }
+    .arr-btn {
+      background: #2e2e34;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 3px;
+      width: 22px;
+      height: 20px;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .arr-btn:hover { background: #444; color: #fff; }
+
     .actions-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -139,7 +159,7 @@
       <span class="brand-dot"></span>
       <span>Smart Search Bar</span>
     </div>
-    <span style="font-size:11px;color:#888;">v3.0 • World-Class</span>
+    <span style="font-size:11px;color:#888;">v3.2 • Конструктор</span>
   </div>
 
   <div class="section">
@@ -154,23 +174,13 @@
       </label>
     </div>
     <button class="btn-full" id="pick-input-btn">🎯 Указать строку поиска кликом</button>
-    <div class="toggle-row" style="margin-top:10px;">
+    <div class="toggle-row" style="margin-top:8px;">
       <div>
         <div style="font-size:12.5px;font-weight:500;color:#ddd;">Сбор тегов со страниц (+)</div>
-        <div class="sub-label">Кнопка + при наведении на тег на сайте</div>
+        <div class="sub-label">Кнопки при наведении на теги галереи</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="hover-collect-toggle" checked>
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="toggle-row" style="margin-top:10px;">
-      <div>
-        <div style="font-size:12.5px;font-weight:500;color:#ddd;">Русский перевод тегов</div>
-        <div class="sub-label">Показывать перевод прямо на кнопках тегов</div>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="ru-translate-toggle" checked>
         <span class="slider"></span>
       </label>
     </div>
@@ -178,10 +188,11 @@
 
   <div class="section">
     <div style="display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-weight:600;color:#ccc;">★ Ваши фавориты (<span id="fav-count">0</span>)</span>
-      <span style="font-size:11px;color:#f5b942;cursor:pointer;" id="reset-subsplease">+ [SubsPlease] 1080p</span>
+      <span style="font-weight:600;color:#60a5fa;">⚙️ Конструктор отображаемых блоков</span>
+      <span style="font-size:11px;color:#f5b942;cursor:pointer;" id="reset-layout-btn">↺ Сбросить</span>
     </div>
-    <div class="fav-preview" id="fav-list"></div>
+    <div class="sub-label">Включайте нужные блоки и меняйте их строчки (▲/▼):</div>
+    <div class="block-list" id="block-list"></div>
   </div>
 
   <div class="section">
@@ -189,7 +200,6 @@
       <span style="font-weight:600;color:#ccc;">📚 Внешняя база тегов</span>
       <span style="font-size:11px;color:#888;" id="custom-db-count">0 тегов</span>
     </div>
-    <div class="sub-label">Поддерживает CSV (Danbooru/e621) и JSON (EhTagTranslation)</div>
     <div class="actions-grid">
       <button class="btn-full" id="import-tagdb-btn" style="margin-top:6px;">⬆ Загрузить теги</button>
       <button class="btn-full btn-danger" id="clear-tagdb-btn" style="margin-top:6px;">🗑 Очистить базу</button>

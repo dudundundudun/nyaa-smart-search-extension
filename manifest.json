@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Smart Search Favorites & Bar (v3.0 World-Class Mouse Edition)",
-  "version": "3.0.0",
-  "description": "Панель поиска мирового уровня для управления мышкой: капсулы текущего запроса, самообучающиеся топ-теги, вкладки категорий с русским переводом и быстрые фильтры.",
+  "name": "Smart Search Favorites & Bar (v3.2 Block Constructor Edition)",
+  "version": "3.2.0",
+  "description": "Конструктор блоков интерфейса, авто-запоминание вводимых тегов отдельно для каждого сайта, любимые запросы сверху и плавная работа без дрожания.",
   "permissions": [
     "storage",
     "unlimitedStorage",

@@ -2,6 +2,37 @@ let currentHost = "";
 let currentProfileKey = "";
 let activeTabId = null;
 
+const DEFAULT_BLOCK_LAYOUT = [
+  { id: "chips", label: "📌 Любимые теги (верхняя панель)", enabled: true },
+  { id: "favorites", label: "★ Избранные запросы", enabled: true },
+  { id: "frequent", label: "🔥 Частые теги (из вашего поиска)", enabled: true },
+  { id: "history", label: "🕒 История поиска", enabled: true },
+  { id: "capsules", label: "💊 Капсулы слов текущего запроса", enabled: false },
+  { id: "operators", label: "🛠 Кнопки операторов и рубрик сайта", enabled: false },
+  { id: "catalog", label: "📚 Вкладки категорий и база тегов", enabled: false }
+];
+
+let currentLayout = JSON.parse(JSON.stringify(DEFAULT_BLOCK_LAYOUT));
+
+function normalizeBlockLayout(savedLayout) {
+  if (!Array.isArray(savedLayout) || !savedLayout.length) {
+    return JSON.parse(JSON.stringify(DEFAULT_BLOCK_LAYOUT));
+  }
+  const map = new Map(DEFAULT_BLOCK_LAYOUT.map(b => [b.id, { ...b }]));
+  const result = [];
+  for (const item of savedLayout) {
+    if (item && map.has(item.id)) {
+      const def = map.get(item.id);
+      result.push({ id: item.id, label: def.label, enabled: Boolean(item.enabled) });
+      map.delete(item.id);
+    }
+  }
+  for (const rem of map.values()) {
+    result.push(rem);
+  }
+  return result;
+}
+
 function getProfileKey(hostname) {
   const host = (hostname || "").replace(/^www\./, "").toLowerCase();
   if (host === "nyaa.si" || host === "nyaa.land" || host.endsWith(".nyaa.si") || host.endsWith(".nyaa.land")) {
@@ -20,6 +51,51 @@ function showStatus(text) {
   setTimeout(() => { el.style.display = "none"; }, 2600);
 }
 
+function renderBlockList() {
+  const container = document.getElementById("block-list");
+  if (!container) return;
+  container.innerHTML = currentLayout.map((b, idx) => `
+    <div class="block-item">
+      <label>
+        <input type="checkbox" data-id="${b.id}" ${b.enabled ? "checked" : ""}>
+        <span style="color:${b.enabled ? "#fff" : "#777"};">${idx + 1}. ${b.label}</span>
+      </label>
+      <div>
+        <button type="button" class="arr-btn" data-idx="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""}>▲</button>
+        <button type="button" class="arr-btn" data-idx="${idx}" data-dir="1" ${idx === currentLayout.length - 1 ? "disabled" : ""}>▼</button>
+      </div>
+    </div>
+  `).join("");
+
+  container.querySelectorAll("input[type='checkbox']").forEach(cb => {
+    cb.addEventListener("change", async () => {
+      const item = currentLayout.find(x => x.id === cb.dataset.id);
+      if (item) {
+        item.enabled = cb.checked;
+        await chrome.storage.local.set({ blockLayout: currentLayout });
+        renderBlockList();
+        showStatus("Блоки обновлены!");
+      }
+    });
+  });
+
+  container.querySelectorAll(".arr-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const idx = Number(btn.dataset.idx);
+      const dir = Number(btn.dataset.dir);
+      const nextIdx = idx + dir;
+      if (nextIdx >= 0 && nextIdx < currentLayout.length) {
+        const tmp = currentLayout[idx];
+        currentLayout[idx] = currentLayout[nextIdx];
+        currentLayout[nextIdx] = tmp;
+        await chrome.storage.local.set({ blockLayout: currentLayout });
+        renderBlockList();
+        showStatus("Порядок строк сохранён!");
+      }
+    });
+  });
+}
+
 async function initPopup() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const tab = tabs[0];
@@ -35,15 +111,13 @@ async function initPopup() {
     document.getElementById("pick-input-btn").disabled = true;
   }
 
-  const data = await chrome.storage.local.get(["enabledDomains", "siteProfiles", "settings", "customTagDatabase"]);
+  const data = await chrome.storage.local.get(["enabledDomains", "siteProfiles", "settings", "customTagDatabase", "blockLayout"]);
   const enabledDomains = data.enabledDomains || [];
-  const siteProfiles = data.siteProfiles || {};
-  const profile = siteProfiles[currentProfileKey] || { chips: [], favorites: [], history: [] };
   const settings = data.settings || { pageTagHover: true };
+  currentLayout = normalizeBlockLayout(data.blockLayout);
+  renderBlockList();
 
   document.getElementById("hover-collect-toggle").checked = settings.pageTagHover !== false;
-  const ruToggle = document.getElementById("ru-translate-toggle");
-  if (ruToggle) ruToggle.checked = settings.showRuTranslations !== false;
   const customTags = Array.isArray(data.customTagDatabase) ? data.customTagDatabase : [];
   document.getElementById("custom-db-count").textContent = `${customTags.length.toLocaleString("ru-RU")} тегов`;
 
@@ -51,32 +125,17 @@ async function initPopup() {
     const isEnabled = enabledDomains.some(d => currentHost === d || currentHost.endsWith("." + d));
     document.getElementById("site-toggle").checked = isEnabled;
     document.getElementById("domain-status").textContent = isEnabled
-      ? `Отдельная база (${currentProfileKey})`
+      ? `Отдельная память поиска (${currentProfileKey})`
       : "Выключено на этом сайте";
   }
-
-  const resetBtn = document.getElementById("reset-subsplease");
-  resetBtn.style.display = currentProfileKey === "nyaa.si" ? "inline" : "none";
-
-  renderFavoritesPreview(profile.favorites || []);
 }
 
-function renderFavoritesPreview(favorites) {
-  document.getElementById("fav-count").textContent = favorites.length;
-  const list = document.getElementById("fav-list");
-  if (!favorites.length) {
-    list.innerHTML = `<div style="padding:10px;color:#777;text-align:center;">Для этого сайта фаворитов пока нет</div>`;
-    return;
-  }
-  list.innerHTML = favorites.map(f => `
-    <div class="fav-item">
-      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-        <span class="fav-star">★</span>
-        <span>${String(f.text || "").replace(/</g, "&lt;")}</span>
-      </div>
-    </div>
-  `).join("");
-}
+document.getElementById("reset-layout-btn").addEventListener("click", async () => {
+  currentLayout = JSON.parse(JSON.stringify(DEFAULT_BLOCK_LAYOUT));
+  await chrome.storage.local.set({ blockLayout: currentLayout });
+  renderBlockList();
+  showStatus("Конструктор сброшен по умолчанию!");
+});
 
 document.getElementById("site-toggle").addEventListener("change", async (e) => {
   if (!currentHost) return;
@@ -95,11 +154,13 @@ document.getElementById("site-toggle").addEventListener("change", async (e) => {
       siteProfiles[currentProfileKey] = {
         chips: defChips,
         favorites: siteProfiles[currentProfileKey]?.favorites || [],
-        history: siteProfiles[currentProfileKey]?.history || []
+        history: siteProfiles[currentProfileKey]?.history || [],
+        tagStats: siteProfiles[currentProfileKey]?.tagStats || {},
+        ignoredTags: siteProfiles[currentProfileKey]?.ignoredTags || []
       };
       await chrome.storage.local.set({ siteProfiles });
     }
-    document.getElementById("domain-status").textContent = `Отдельная база (${currentProfileKey})`;
+    document.getElementById("domain-status").textContent = `Отдельная память поиска (${currentProfileKey})`;
   } else {
     updated = enabledDomains.filter(d => d !== currentHost && !currentHost.endsWith("." + d));
     document.getElementById("domain-status").textContent = "Выключено на этом сайте";
@@ -120,27 +181,6 @@ document.getElementById("pick-input-btn").addEventListener("click", async () => 
   window.close();
 });
 
-document.getElementById("reset-subsplease").addEventListener("click", async () => {
-  if (!currentProfileKey) return;
-  const { siteProfiles = {} } = await chrome.storage.local.get(["siteProfiles"]);
-  if (!siteProfiles[currentProfileKey]) {
-    siteProfiles[currentProfileKey] = { chips: [], favorites: [], history: [] };
-  }
-  const favs = (siteProfiles[currentProfileKey].favorites || []).filter(f => f.text.toLowerCase() !== "[subsplease] 1080p");
-  favs.unshift({
-    id: "fav_default_1",
-    text: "[SubsPlease] 1080p",
-    category: "1_2",
-    filter: "0",
-    addedAt: Date.now()
-  });
-  siteProfiles[currentProfileKey].favorites = favs;
-  await chrome.storage.local.set({ siteProfiles });
-  renderFavoritesPreview(favs);
-  showStatus("«[SubsPlease] 1080p» поставлен на 1-е место!");
-});
-
-// Parse Danbooru CSV (tag,category,count,aliases) or EhTagTranslation JSON or simple JSON array
 function parseExternalTagFile(filename, rawText) {
   const parsedTags = [];
   const lowerName = filename.toLowerCase();
@@ -161,7 +201,6 @@ function parseExternalTagFile(filename, rawText) {
         }
       }
     } else if (json && Array.isArray(json.data)) {
-      // EhTagTranslation db.html.json / db.raw.json format
       for (const nsObj of json.data) {
         const ns = nsObj.namespace || "general";
         if (ns === "rows") continue;
@@ -173,7 +212,6 @@ function parseExternalTagFile(filename, rawText) {
       }
     }
   } else {
-    // CSV / TXT line-by-line (tag,type,count,...)
     const lines = rawText.split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -191,7 +229,6 @@ function parseExternalTagFile(filename, rawText) {
     }
   }
 
-  // Sort by popularity descending and cap at 100,000 for snappy lookup
   parsedTags.sort((a, b) => (b.p || 0) - (a.p || 0));
   return parsedTags.slice(0, 100000);
 }
@@ -228,7 +265,7 @@ document.getElementById("clear-tagdb-btn").addEventListener("click", async () =>
 });
 
 document.getElementById("export-btn").addEventListener("click", async () => {
-  const allData = await chrome.storage.local.get(["enabledDomains", "siteProfiles", "customSelectors", "settings"]);
+  const allData = await chrome.storage.local.get(["enabledDomains", "siteProfiles", "customSelectors", "settings", "blockLayout"]);
   const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -261,10 +298,3 @@ document.getElementById("import-file").addEventListener("change", (e) => {
 });
 
 initPopup();
-
-document.getElementById("ru-translate-toggle")?.addEventListener("change", async (e) => {
-  const { settings = {} } = await chrome.storage.local.get(["settings"]);
-  settings.showRuTranslations = e.target.checked;
-  await chrome.storage.local.set({ settings });
-  showStatus(e.target.checked ? "Русский перевод включён" : "Русский перевод скрыт");
-});

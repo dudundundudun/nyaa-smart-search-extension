@@ -7,6 +7,7 @@
     { id: "favorites", label: "★ Избранные запросы", enabled: true },
     { id: "frequent", label: "🔥 Частые теги (из вашего поиска на сайте)", enabled: true },
     { id: "history", label: "🕒 История поиска", enabled: true },
+    { id: "autocomplete", label: "💡 Подсказки по вводу (автодополнение)", enabled: false },
     { id: "capsules", label: "💊 Капсулы слов текущего запроса", enabled: false },
     { id: "operators", label: "🛠 Кнопки операторов и рубрик сайта", enabled: false },
     { id: "catalog", label: "📚 Вкладки категорий и база тегов", enabled: false }
@@ -446,6 +447,44 @@
         learnTagsFromQuery(h.text, Math.max(1, h.count || 1));
       }
       needsSave = true;
+    }
+
+    // Sync native nhentai.net localStorage ("nh-saved-searches" & "nh-recent-searches") if on nhentai.net
+    if (key === "nhentai.net") {
+      try {
+        const rawSaved = localStorage.getItem("nh-saved-searches");
+        if (rawSaved) {
+          const parsedSaved = JSON.parse(rawSaved);
+          if (Array.isArray(parsedSaved)) {
+            const existingFavs = new Set(state.favorites.map(f => f.text.toLowerCase()));
+            for (const item of parsedSaved) {
+              const q = (item && item.query ? String(item.query) : "").trim();
+              if (q && !existingFavs.has(q.toLowerCase())) {
+                state.favorites.push({ id: "fav_nh_" + (item.savedAt || Date.now()) + "_" + Math.random().toString(36).slice(2, 6), text: q, category: "", filter: "", addedAt: item.savedAt || Date.now() });
+                existingFavs.add(q.toLowerCase());
+                learnTagsFromQuery(q, 2);
+                needsSave = true;
+              }
+            }
+          }
+        }
+        const rawRecent = localStorage.getItem("nh-recent-searches");
+        if (rawRecent) {
+          const parsedRecent = JSON.parse(rawRecent);
+          if (Array.isArray(parsedRecent)) {
+            const existingHist = new Set(state.history.map(h => h.text.toLowerCase()));
+            for (const item of parsedRecent) {
+              const q = (item && item.query ? String(item.query) : "").trim();
+              if (q && !existingHist.has(q.toLowerCase())) {
+                state.history.push({ id: "hist_nh_" + (item.visitedAt || Date.now()) + "_" + Math.random().toString(36).slice(2, 6), text: q, count: 1, lastUsed: item.visitedAt || Date.now() });
+                existingHist.add(q.toLowerCase());
+                learnTagsFromQuery(q, 1);
+                needsSave = true;
+              }
+            }
+          }
+        }
+      } catch (e) {}
     }
 
     if (needsSave) {
@@ -940,12 +979,13 @@
         .nh-dropdown {
           background: #1f1f1f;
           color: #d9d9d9;
-          border: 1px solid #383838;
-          border-top: none;
-          box-shadow: 0 14px 32px rgba(0, 0, 0, 0.78);
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          font-size: 13.5px;
-          max-height: 520px;
+          border: 1px solid #2b2b2b;
+          border-top: 1px solid #262626;
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.72);
+          font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          font-size: 14px;
+          line-height: 1.4;
+          max-height: 560px;
           display: flex;
           flex-direction: column;
           user-select: none;
@@ -954,184 +994,173 @@
           overflow-y: auto;
           flex: 1;
         }
-        .nh-results::-webkit-scrollbar { width: 8px; }
-        .nh-results::-webkit-scrollbar-track { background: #181818; }
-        .nh-results::-webkit-scrollbar-thumb { background: #4d4d4d; border-radius: 4px; }
+        .nh-results::-webkit-scrollbar { width: 10px; }
+        .nh-results::-webkit-scrollbar-track { background: #1a1a1a; }
+        .nh-results::-webkit-scrollbar-thumb { background: #4a4a4a; }
 
-        /* Top Mini Action Strip */
+        /* Calm Top Mini Action Strip */
         .top-mini-bar {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 4px 10px; background: #141414; border-bottom: 1px solid #292929;
-          font-size: 11px; color: #8c8c8c;
+          padding: 6px 14px; background: #191919; border-bottom: 1px solid #2b2b2b;
+          font-size: 12px; color: #8c8c8c;
         }
         .mini-btn {
-          background: #262626; color: #d4d4d4; border: 1px solid #3a3a3a;
-          border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer;
-          display: inline-flex; align-items: center; gap: 4px;
+          background: #262626; color: #cfcfcf; border: 1px solid #363636;
+          border-radius: 3px; padding: 3px 9px; font-size: 12px; cursor: pointer;
+          display: inline-flex; align-items: center; gap: 5px;
+          font-family: inherit; transition: background 0.12s, color 0.12s;
         }
-        .mini-btn:hover { background: #363636; color: #fff; }
-        .mini-btn.active { background: #2563eb; color: #fff; border-color: #60a5fa; }
+        .mini-btn:hover { background: #333333; color: #fff; }
+        .mini-btn.active { background: #2b4c7e; color: #fff; border-color: #4a76b8; }
         .mini-btn.run-btn {
           background: #ed2553; color: #fff; border-color: #ed2553; font-weight: 600;
         }
         .mini-btn.run-btn:hover { background: #d41c47; }
 
-        /* Block Constructor Panel (Inline Settings) */
+        /* Block Constructor Panel */
         .builder-panel {
-          padding: 10px 12px; background: #18181b; border-bottom: 2px solid #3b82f6;
+          padding: 12px 14px; background: #1a1a1a; border-bottom: 1px solid #2b2b2b;
         }
         .builder-title {
-          font-size: 12px; font-weight: 700; color: #60a5fa; margin-bottom: 8px;
+          font-size: 12.5px; font-weight: 700; color: #d9d9d9; margin-bottom: 8px;
           display: flex; align-items: center; justify-content: space-between;
         }
         .builder-row {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 5px 8px; background: #222226; border: 1px solid #323238;
-          border-radius: 4px; margin-bottom: 4px; font-size: 12.5px;
+          padding: 7px 10px; background: #242424; border: 1px solid #2e2e2e;
+          border-radius: 3px; margin-bottom: 5px; font-size: 13px;
         }
         .builder-left {
-          display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;
+          display: flex; align-items: center; gap: 9px; cursor: pointer; flex: 1;
         }
         .builder-arrows {
           display: inline-flex; gap: 4px;
         }
         .arr-btn {
-          background: #2e2e34; color: #ccc; border: 1px solid #444;
-          border-radius: 3px; width: 24px; height: 22px; cursor: pointer;
+          background: #2e2e2e; color: #ccc; border: 1px solid #3d3d3d;
+          border-radius: 3px; width: 26px; height: 24px; cursor: pointer;
           font-size: 11px; line-height: 1;
         }
-        .arr-btn:hover { background: #444; color: #fff; }
+        .arr-btn:hover { background: #3d3d3d; color: #fff; }
 
-        /* Pinned & Frequent Chips Bars — ZERO LAYOUT SHIFT ON HOVER! */
+        /* Spacious Pinned & Frequent Chips Bars — ZERO LAYOUT SHIFT ON HOVER! */
         .chips-bar {
-          display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-          padding: 8px 10px; background: #161616; border-bottom: 1px solid #2e2e2e;
+          display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+          padding: 10px 14px; background: #1b1b1b; border-bottom: 1px solid #2b2b2b;
         }
         .chips-label {
-          font-size: 11px; color: #8c8c8c; margin-right: 2px;
-          font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+          font-size: 12px; color: #8c8c8c; margin-right: 4px;
+          font-weight: 500;
         }
         .chip-wrap {
           display: inline-flex; align-items: center; position: relative;
         }
         .chip-btn {
-          background: #2b2b2b; color: #d4d4d4; border: 1px solid #3f3f3f;
-          border-radius: 4px; padding: 2px 8px; font-size: 12px; cursor: pointer;
+          background: #262626; color: #d9d9d9; border: 1px solid #363636;
+          border-radius: 4px; padding: 4px 10px; font-size: 13px; cursor: pointer;
           transition: background 0.12s, color 0.12s, border-color 0.12s;
-          font-family: Consolas, Monaco, "Courier New", monospace;
-          display: inline-flex; align-items: center; gap: 4px;
+          font-family: "JetBrains Mono", Consolas, Monaco, "Courier New", monospace;
+          letter-spacing: 0.1px;
+          display: inline-flex; align-items: center; gap: 6px;
         }
-        .chip-btn:hover { background: #3a3a3a; color: #fff; border-color: #666; }
-        .chip-btn.included { background: #7c5816; color: #fff3d1; border-color: #c28b22; }
-        .chip-btn.excluded { background: #5c1927; color: #ffd4dd; border-color: #c4314b; text-decoration: line-through; }
-        .chip-btn.freq-btn { background: #1e293b; border-color: #334155; color: #e2e8f0; }
-        .chip-btn.freq-btn:hover { background: #334155; border-color: #64748b; color: #fff; }
-        .chip-btn.freq-btn.included { background: #7c5816; color: #fff3d1; border-color: #c28b22; }
-        .chip-btn.freq-btn.excluded { background: #5c1927; color: #ffd4dd; border-color: #c4314b; }
-        .freq-cnt { font-size: 10px; color: #94a3b8; font-family: sans-serif; }
+        .chip-btn:hover { background: #323232; color: #fff; border-color: #555; }
+        .chip-btn.included { background: #6b4c1b; color: #fff3d1; border-color: #b8862d; }
+        .chip-btn.excluded { background: #521824; color: #ffd4dd; border-color: #b8324f; text-decoration: line-through; }
+        .chip-btn.freq-btn { background: #22262e; border-color: #323946; color: #d9d9d9; }
+        .chip-btn.freq-btn:hover { background: #2c323d; border-color: #4f5b6e; color: #fff; }
+        .chip-btn.freq-btn.included { background: #6b4c1b; color: #fff3d1; border-color: #b8862d; }
+        .chip-btn.freq-btn.excluded { background: #521824; color: #ffd4dd; border-color: #b8324f; }
+        .freq-cnt { font-size: 11px; color: #8c8c8c; font-family: "Noto Sans", sans-serif; }
 
         /* Absolute badge overlay — never alters width of .chip-wrap, 0% jitter! */
         .chip-del {
           position: absolute; top: -6px; right: -6px;
-          width: 15px; height: 15px; border-radius: 50%;
-          background: #be123c; color: #fff; border: 1px solid #fda4af;
-          font-size: 10px; font-weight: 700; line-height: 13px; text-align: center;
+          width: 16px; height: 16px; border-radius: 50%;
+          background: #333; color: #ccc; border: 1px solid #555;
+          font-size: 11px; font-weight: 700; line-height: 14px; text-align: center;
           padding: 0; cursor: pointer; z-index: 5;
           opacity: 0; pointer-events: none; transition: opacity 0.12s;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.6);
         }
         .chip-wrap:hover .chip-del { opacity: 1; pointer-events: auto; }
-        .chip-del:hover { background: #e11d48; }
+        .chip-del:hover { background: #ed2553; color: #fff; border-color: #ff6b8b; }
 
         .chip-add-btn {
-          background: transparent; color: #9c9c9c; border: 1px dashed #4a4a4a;
-          border-radius: 4px; padding: 2px 7px; font-size: 11.5px; cursor: pointer;
+          background: transparent; color: #8c8c8c; border: 1px dashed #444;
+          border-radius: 4px; padding: 4px 10px; font-size: 12.5px; cursor: pointer;
         }
-        .chip-add-btn:hover { color: #fff; border-color: #888; }
+        .chip-add-btn:hover { color: #d9d9d9; border-color: #777; }
         .inline-chip-box {
-          display: inline-flex; align-items: center; gap: 4px;
+          display: inline-flex; align-items: center; gap: 5px;
         }
         .inline-chip-input {
-          background: #111; color: #fff; border: 1px solid #ed2553;
-          border-radius: 4px; padding: 2px 7px; font-size: 12px; width: 155px; outline: none;
+          background: #141414; color: #fff; border: 1px solid #ed2553;
+          border-radius: 4px; padding: 4px 9px; font-size: 13px; width: 170px; outline: none;
         }
 
         /* Optional Capsules Bar */
         .capsules-bar {
-          display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
-          padding: 6px 10px; background: #131824; border-bottom: 1px solid #243047;
+          display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+          padding: 8px 14px; background: #181c24; border-bottom: 1px solid #2b2b2b;
         }
         .capsule-label {
-          font-size: 10.5px; color: #60a5fa; font-weight: 700; text-transform: uppercase;
+          font-size: 12px; color: #8c8c8c; margin-right: 4px;
         }
         .q-capsule {
-          display: inline-flex; align-items: center; gap: 4px;
-          background: #1e3a8a; color: #eff6ff; border: 1px solid #3b82f6;
-          border-radius: 10px; padding: 1px 7px; font-size: 11.5px; cursor: pointer;
-          font-family: Consolas, Monaco, "Courier New", monospace;
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #263859; color: #e6f0ff; border: 1px solid #3d5a80;
+          border-radius: 4px; padding: 3px 9px; font-size: 12.5px; cursor: pointer;
+          font-family: "JetBrains Mono", Consolas, monospace;
         }
-        .q-capsule:hover { background: #dc2626; border-color: #f87171; color: #fff; }
+        .q-capsule:hover { background: #a82039; border-color: #ed2553; color: #fff; }
         .q-capsule.negated {
-          background: #4c0519; color: #fecdd3; border-color: #e11d48; text-decoration: line-through;
+          background: #4c111b; color: #fecdd3; border-color: #9e2a3b; text-decoration: line-through;
         }
 
         /* Optional Operators Bar */
         .ops-bar {
-          display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
-          padding: 5px 10px; background: #1b1b1b; border-bottom: 1px solid #2b2b2b;
+          display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+          padding: 8px 14px; background: #1b1b1b; border-bottom: 1px solid #2b2b2b;
         }
         .op-btn {
-          background: #27272a; color: #cbd5e1; border: 1px solid #3f3f46;
-          border-radius: 3px; padding: 2px 7px; font-size: 11.5px; cursor: pointer;
+          background: #262626; color: #d9d9d9; border: 1px solid #363636;
+          border-radius: 3px; padding: 4px 9px; font-size: 12.5px; cursor: pointer;
         }
-        .op-btn:hover { background: #3f3f46; color: #fff; }
-        .op-btn.active { background: #2563eb; color: #fff; border-color: #3b82f6; }
+        .op-btn:hover { background: #333; color: #fff; }
+        .op-btn.active { background: #2b4c7e; color: #fff; border-color: #4a76b8; }
 
         /* Optional Category Catalog */
         .catalog-drawer {
-          background: #17171a; border-bottom: 1px solid #2e2e34;
+          background: #1b1b1b; border-bottom: 1px solid #2b2b2b;
         }
         .cat-tabs {
-          display: flex; align-items: center; gap: 4px; overflow-x: auto;
-          padding: 5px 10px; background: #141416; border-bottom: 1px solid #26262a;
+          display: flex; align-items: center; gap: 6px; overflow-x: auto;
+          padding: 8px 14px; background: #171717; border-bottom: 1px solid #2b2b2b;
         }
         .cat-tab {
-          background: #222226; color: #a1a1aa; border: 1px solid #323238;
-          border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+          background: #242424; color: #9e9e9e; border: 1px solid #333;
+          border-radius: 3px; padding: 4px 10px; font-size: 12px;
           cursor: pointer; white-space: nowrap;
         }
-        .cat-tab.active { background: #ed2553; color: #fff; border-color: #ff4d79; }
+        .cat-tab.active { background: #ed2553; color: #fff; border-color: #ed2553; }
 
-        .search-for-row {
-          display: flex; align-items: stretch; background: #343434;
-          border-bottom: 1px solid #2d2d2d; min-height: 36px;
-        }
-        .search-for-main {
-          flex: 1; display: flex; align-items: center; padding: 6px 12px;
-          cursor: pointer; color: #b5b5b5; gap: 8px; overflow: hidden;
-        }
-        .search-for-main:hover { background: #404040; }
-        .search-for-query {
-          color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
+        /* Authentic nhentai.net Rows (41px height, 10px 14px padding, subtle #2b2b2b borders) */
         .nh-section-hdr {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 4px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase;
-          letter-spacing: 0.5px; color: #7e7e7e; background: #181818; border-bottom: 1px solid #272727;
+          padding: 7px 14px; font-size: 12px; font-weight: 500;
+          color: #8c8c8c; background: #1a1a1a; border-bottom: 1px solid #2b2b2b;
         }
         .nh-row {
           display: flex; align-items: stretch; background: #1f1f1f;
-          border-bottom: 1px solid #2a2a2a; min-height: 34px; transition: background 0.08s;
+          border-bottom: 1px solid #2b2b2b; min-height: 41px; transition: background 0.08s;
         }
-        .nh-row:hover { background: #292929; }
+        .nh-row:hover { background: #282828; }
         .nh-row.dragging { opacity: 0.45; background: #333; }
         .nh-cell-main {
-          flex: 1; display: flex; align-items: center; padding: 5px 12px;
-          gap: 8px; cursor: pointer; overflow: hidden;
+          flex: 1; display: flex; align-items: center; padding: 9px 14px;
+          gap: 10px; cursor: pointer; overflow: hidden;
         }
-        .nh-star-icon { color: #f5b942; font-size: 14px; flex-shrink: 0; width: 16px; text-align: center; }
-        .nh-clock-icon { color: #9e9e9e; font-size: 13px; flex-shrink: 0; width: 16px; text-align: center; }
+        .nh-star-icon { color: #f5b942; font-size: 15px; flex-shrink: 0; width: 18px; text-align: center; }
+        .nh-clock-icon { color: #9e9e9e; font-size: 14px; flex-shrink: 0; width: 18px; text-align: center; }
         .nh-tag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .cat-artist { color: #f87171; }
         .dot-artist { background: #f87171; }
@@ -1147,43 +1176,48 @@
         .dot-language, .dot-meta { background: #fbbf24; }
         .cat-nyaa { color: #38bdf8; }
         .dot-nyaa { background: #38bdf8; }
-        .cat-general, .cat-group { color: #e2e8f0; }
+        .cat-general, .cat-group { color: #d9d9d9; }
         .dot-general, .dot-group { background: #94a3b8; }
 
         .nh-text {
-          color: #e6e6e6; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          color: #d9d9d9; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .nh-text.mono { font-family: Consolas, Monaco, "Courier New", monospace; font-size: 13px; }
+        .nh-text.mono {
+          font-family: "JetBrains Mono", Consolas, Monaco, "Courier New", monospace;
+          font-size: 13.5px; letter-spacing: 0.15px; color: #d9d9d9;
+        }
         .nh-desc {
-          color: #8a8a8a; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 4px;
+          color: #8c8c8c; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: auto; padding-left: 12px;
         }
         .nh-count {
-          color: #8a8a8a; font-size: 12px; margin-left: auto; padding-left: 8px; flex-shrink: 0;
+          color: #8c8c8c; font-size: 13px; margin-left: auto; padding-left: 10px; flex-shrink: 0;
         }
+
+        /* Square 40px right-side cells matching Screenshot_35.png */
         .nh-cell-action {
-          width: 34px; display: flex; align-items: center; justify-content: center;
-          border-left: 1px solid #2a2a2a; color: #b0b0b0; cursor: pointer;
-          font-size: 14px; flex-shrink: 0; background: transparent; transition: background 0.1s, color 0.1s;
+          width: 40px; display: flex; align-items: center; justify-content: center;
+          border-left: 1px solid #2b2b2b; color: #9e9e9e; cursor: pointer;
+          font-size: 16px; flex-shrink: 0; background: transparent; transition: background 0.1s, color 0.1s, opacity 0.12s;
         }
-        .nh-cell-action:hover { background: #343434; color: #fff; }
+        .nh-cell-action:hover { background: #323232; color: #fff; }
         .nh-cell-action.star-cell.active, .nh-cell-action.star-cell:hover { color: #f5b942; }
-        .nh-cell-action.del-cell:hover { background: #4a1c26; color: #ff6b8b; }
-        .nh-cell-action.drag-cell {
-          cursor: grab; width: 24px; font-size: 12px; color: #666;
-          border-left: none; border-right: 1px solid #2a2a2a;
+        .nh-cell-action.del-cell:hover { background: #3a2026; color: #ff6b8b; }
+        /* Secondary actions (append →, edit ✎) stay subtle until row hover so UI stays as clean as nhentai */
+        .nh-cell-action.sec-action {
+          width: 34px; font-size: 13px; color: #707070;
         }
         .nh-more-row {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 6px 12px; background: #1a1a1a; border-bottom: 1px solid #2c2c2c;
-          color: #9e9e9e; font-size: 12.5px; cursor: pointer;
+          padding: 9px 14px; background: #1f1f1f; border-bottom: 1px solid #2b2b2b;
+          color: #9e9e9e; font-size: 13.5px; cursor: pointer; min-height: 39px;
         }
-        .nh-more-row:hover { background: #252525; color: #d9d9d9; }
-        .nh-add-fav-btn { color: #f5b942; font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
-        .nh-add-fav-btn:hover { background: rgba(245, 185, 66, 0.15); }
-        .nh-edit-wrap { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 8px; background: #262626; }
-        .nh-edit-input { flex: 1; background: #141414; color: #fff; border: 1px solid #555; border-radius: 3px; padding: 4px 8px; font-size: 13px; }
-        .nh-edit-save { background: #2ea043; color: #fff; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
-        .nh-edit-cancel { background: #444; color: #ddd; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+        .nh-more-row:hover { background: #282828; color: #d9d9d9; }
+        .nh-add-fav-btn { color: #9e9e9e; font-size: 13px; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
+        .nh-add-fav-btn:hover { color: #f5b942; background: rgba(245, 185, 66, 0.1); }
+        .nh-edit-wrap { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 12px; background: #262626; }
+        .nh-edit-input { flex: 1; background: #141414; color: #fff; border: 1px solid #555; border-radius: 3px; padding: 6px 10px; font-size: 14px; }
+        .nh-edit-save { background: #2ea043; color: #fff; border: none; border-radius: 3px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .nh-edit-cancel { background: #444; color: #ddd; border: none; border-radius: 3px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
       </style>
       <div class="nh-dropdown" id="nh-dropdown">
         <div id="nh-header-zone"></div>
@@ -1198,7 +1232,7 @@
   function positionDropdown() {
     if (!activeInput || !hostEl) return;
     const rect = activeInput.getBoundingClientRect();
-    const group = activeInput.closest(".input-group");
+    const group = activeInput.closest(".input-group, form.search, form");
     let width = rect.width;
     let left = rect.left;
     if (group) {
@@ -1324,14 +1358,9 @@
 
     if (blockId === "favorites") {
       const filteredFavs = state.favorites;
-      const favLimit = state.showAllSaved ? filteredFavs.length : Math.min(5, filteredFavs.length);
+      const favLimit = state.showAllSaved ? filteredFavs.length : Math.min(4, filteredFavs.length);
       const visibleFavs = filteredFavs.slice(0, favLimit);
       let h = "";
-      if (visibleFavs.length > 0) {
-        h += `<div class="nh-section-hdr">
-          <span>★ Избранные запросы (СКМ — в новой вкладке)</span>
-        </div>`;
-      }
       visibleFavs.forEach((fav, idx) => {
         if (state.editingId === fav.id) {
           h += `
@@ -1344,26 +1373,26 @@
             </div>`;
           return;
         }
+        const isCodeLike = /[\[\]":$]/.test(fav.text);
         h += `
           <div class="nh-row" draggable="true" data-idx="${idx}" data-id="${escapeHtml(fav.id)}">
-            <div class="nh-cell-action drag-cell" title="Перетащить">⠿</div>
-            <div class="nh-cell-main" data-action="run-query" data-query="${escapeHtml(fav.text)}" data-id="${escapeHtml(fav.id)}" title="ЛКМ: искать сразу | СКМ: в новой вкладке">
+            <div class="nh-cell-main" data-action="run-query" data-query="${escapeHtml(fav.text)}" data-id="${escapeHtml(fav.id)}" title="ЛКМ: искать сразу | СКМ: в новой вкладке | Перетащите строку мышкой для сортировки">
               <span class="nh-star-icon">★</span>
-              <span class="nh-text mono">${escapeHtml(fav.text)}</span>
+              <span class="nh-text ${isCodeLike ? "mono" : ""}">${escapeHtml(fav.text)}</span>
             </div>
-            <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(fav.text)}" title="Подставить / добавить к текущему запросу">→</div>
-            <div class="nh-cell-action" data-action="edit-fav" data-id="${escapeHtml(fav.id)}" title="Редактировать">✎</div>
+            <div class="nh-cell-action sec-action" data-action="append-query" data-query="${escapeHtml(fav.text)}" title="Добавить к текущему запросу">→</div>
+            <div class="nh-cell-action sec-action" data-action="edit-fav" data-id="${escapeHtml(fav.id)}" title="Редактировать">✎</div>
             <div class="nh-cell-action del-cell" data-action="delete-fav" data-id="${escapeHtml(fav.id)}" title="Удалить">×</div>
           </div>`;
       });
 
-      const hiddenFavCount = Math.max(0, filteredFavs.length - 5);
+      const hiddenFavCount = Math.max(0, filteredFavs.length - 4);
       h += `
         <div class="nh-more-row" data-action="toggle-more-saved">
           <span>${hiddenFavCount > 0
-            ? (state.showAllSaved ? "▴ Свернуть сохранённые" : `▾ Показать ещё ${hiddenFavCount} (всего ${filteredFavs.length})`)
-            : `★ Сохранённые фавориты (${filteredFavs.length})`}</span>
-          <span class="nh-add-fav-btn" data-action="add-new-fav">+ Добавить фаворит</span>
+            ? (state.showAllSaved ? "▴ Свернуть сохранённые" : `▾ ${hiddenFavCount} ещё сохранённых`)
+            : `▾ Сохранённые (${filteredFavs.length})`}</span>
+          <span class="nh-add-fav-btn" data-action="add-new-fav">+ Добавить</span>
         </div>`;
       return h;
     }
@@ -1372,9 +1401,9 @@
       const favSet = new Set(state.favorites.map(f => f.text.trim().toLowerCase()));
       const filteredHist = state.history;
       if (!filteredHist.length) return "";
-      const histLimit = state.showAllRecent ? filteredHist.length : Math.min(5, filteredHist.length);
+      const histLimit = state.showAllRecent ? filteredHist.length : Math.min(4, filteredHist.length);
       const visibleHist = filteredHist.slice(0, histLimit);
-      let h = `<div class="nh-section-hdr"><span>🕒 Недавние запросы на сайте</span></div>`;
+      let h = "";
       visibleHist.forEach(item => {
         const isFav = favSet.has(item.text.trim().toLowerCase());
         h += `
@@ -1382,21 +1411,21 @@
             <div class="nh-cell-main" data-action="run-query" data-query="${escapeHtml(item.text)}" title="ЛКМ: искать сразу | СКМ: в новой вкладке">
               <span class="nh-clock-icon">🕒</span>
               <span class="nh-text mono">${escapeHtml(item.text)}</span>
-              <span class="nh-count">${item.count || 1}×</span>
+              ${(item.count || 1) > 1 ? `<span class="nh-count">${item.count}×</span>` : ""}
             </div>
-            <div class="nh-cell-action" data-action="append-query" data-query="${escapeHtml(item.text)}" title="Подставить / добавить в строку">→</div>
+            <div class="nh-cell-action sec-action" data-action="append-query" data-query="${escapeHtml(item.text)}" title="Добавить к текущему запросу">→</div>
             <div class="nh-cell-action star-cell ${isFav ? "active" : ""}" data-action="promote-hist" data-query="${escapeHtml(item.text)}" title="В избранное">${isFav ? "★" : "☆"}</div>
             <div class="nh-cell-action del-cell" data-action="delete-hist" data-id="${escapeHtml(item.id)}" title="Удалить">×</div>
           </div>`;
       });
-      if (filteredHist.length > 5) {
-        const hiddenHistCount = filteredHist.length - 5;
-        h += `
-          <div class="nh-more-row" data-action="toggle-more-recent">
-            <span>${state.showAllRecent ? "▴ Свернуть недавние" : `▾ Ещё ${hiddenHistCount} недавних`}</span>
-            <span data-action="clear-all-hist" style="font-size:11.5px;color:#777;">Очистить историю</span>
-          </div>`;
-      }
+      const hiddenHistCount = Math.max(0, filteredHist.length - 4);
+      h += `
+        <div class="nh-more-row" data-action="toggle-more-recent">
+          <span>${hiddenHistCount > 0
+            ? (state.showAllRecent ? "▴ Свернуть недавние" : `▾ ${hiddenHistCount} ещё недавних`)
+            : `▾ Недавние (${filteredHist.length})`}</span>
+          <span data-action="clear-all-hist" style="font-size:12px;color:#777;">Очистить</span>
+        </div>`;
       return h;
     }
 
@@ -1450,6 +1479,33 @@
       return h;
     }
 
+    if (blockId === "autocomplete") {
+      const rawVal = activeInput ? (activeInput.value || "") : "";
+      const { token } = getCurrentTokenInfo(rawVal);
+      const tokenClean = token.replace(/^[-+"]/, "");
+      if (tokenClean.length < 1) return "";
+      const dbMatches = queryTagDatabase(tokenClean, 8);
+      if (!dbMatches.length) return "";
+      let h = `<div class="nh-section-hdr">
+        <span>💡 Подсказки по вводу (ЛКМ: вставить | ПКМ: исключить)</span>
+      </div>`;
+      dbMatches.forEach(item => {
+        const catCls = escapeHtml(item.c || "general");
+        const formatted = formatTagForSite(item.t);
+        h += `
+          <div class="nh-row">
+            <div class="nh-cell-main" data-action="insert-token" data-tag="${escapeHtml(item.t)}">
+              <span class="nh-tag-dot dot-${catCls}"></span>
+              <span class="nh-text mono cat-${catCls}">${escapeHtml(formatted)}</span>
+              ${item.d ? `<span class="nh-desc">— ${escapeHtml(item.d)}</span>` : ""}
+            </div>
+            <div class="nh-cell-action star-cell" data-action="add-chip-direct" data-tag="${escapeHtml(formatted)}" title="Закрепить в любимых тегах">+</div>
+          </div>
+        `;
+      });
+      return h;
+    }
+
     return "";
   }
 
@@ -1460,10 +1516,12 @@
     const tokens = tokenizeSearchQuery(trimmedVal);
     const { token } = getCurrentTokenInfo(rawVal);
 
-    // Top mini-strip with "⚙️ Конструктор блоков" & "🔍 Найти"
+    const favActive = trimmedVal.length > 0 && isFavorited(trimmedVal);
+    // Top mini-strip with "⚙️ Конструктор блоков", "★ В избранное" & "🔍 Найти"
     let headerHtml = `<div class="top-mini-bar">
       <span>Сайт: <strong style="color:#d4d4d4;">${escapeHtml(getProfileKey())}</strong></span>
       <div style="display:flex;gap:6px;align-items:center;">
+        ${trimmedVal.length > 0 ? `<button type="button" class="mini-btn" data-action="star-current" style="color:${favActive ? "#f5b942" : "#d4d4d4"};" title="Сохранить текущий запрос в Избранное">${favActive ? "★ В избранном" : "☆ В избранное"}</button>` : ""}
         <button type="button" class="mini-btn ${state.showLayoutModal ? "active" : ""}" id="toggle-builder-btn" title="Настроить отображаемые блоки и их порядок">⚙️ Конструктор блоков</button>
         <button type="button" class="mini-btn run-btn" id="op-submit" title="Запустить поиск мышкой">🔍 Найти</button>
       </div>
@@ -1528,49 +1586,7 @@
 
     let bodyHtml = "";
 
-    // "Search for <query>" row when input has text
-    if (trimmedVal.length > 0) {
-      const favActive = isFavorited(trimmedVal);
-      bodyHtml += `
-        <div class="search-for-row">
-          <div class="search-for-main" data-action="submit-current">
-            <span>↵</span>
-            <span>Найти:</span>
-            <span class="search-for-query">${escapeHtml(trimmedVal)}</span>
-          </div>
-          <div class="nh-cell-action star-cell ${favActive ? "active" : ""}" data-action="star-current" title="Сохранить в Избранное (★)">
-            ${favActive ? "★" : "☆"}
-          </div>
-        </div>
-      `;
-    }
-
-    // Live autocomplete when user is actively typing a word
-    const tokenClean = token.replace(/^[-+"]/, "");
-    if (tokenClean.length >= 1) {
-      const dbMatches = queryTagDatabase(tokenClean, 10);
-      if (dbMatches.length > 0) {
-        bodyHtml += `<div class="nh-section-hdr">
-          <span>Подсказки по вводу (ЛКМ: вставить | ПКМ: исключить)</span>
-        </div>`;
-        dbMatches.forEach(item => {
-          const catCls = escapeHtml(item.c || "general");
-          const formatted = formatTagForSite(item.t);
-          bodyHtml += `
-            <div class="nh-row">
-              <div class="nh-cell-main" data-action="insert-token" data-tag="${escapeHtml(item.t)}">
-                <span class="nh-tag-dot dot-${catCls}"></span>
-                <span class="nh-text mono cat-${catCls}">${escapeHtml(formatted)}</span>
-                ${item.d ? `<span class="nh-desc">— ${escapeHtml(item.d)}</span>` : ""}
-              </div>
-              <div class="nh-cell-action star-cell" data-action="add-chip-direct" data-tag="${escapeHtml(formatted)}" title="Закрепить в любимых тегах">+</div>
-            </div>
-          `;
-        });
-      }
-    }
-
-    // Render all enabled blocks in the exact user-chosen order!
+    // Render all enabled blocks in the exact user-chosen order! (Zero hardcoded rows above Row 1!)
     for (const block of state.blockLayout) {
       if (!block.enabled) continue;
       bodyHtml += renderSingleBlock(block.id, trimmedVal, tokens);

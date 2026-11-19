@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Smart Search Favorites & Bar (v3.2 Block Constructor Edition)",
-  "version": "3.2.0",
-  "description": "Конструктор блоков интерфейса, авто-запоминание вводимых тегов отдельно для каждого сайта, любимые запросы сверху и плавная работа без дрожания.",
+  "name": "Smart Search Favorites & Bar (v3.4 nhentai Design Edition)",
+  "version": "3.4.0",
+  "description": "Дизайн, шрифты и воздушные отступы в стиле nhentai.net, конструктор блоков и авто-память вводимых тегов для каждого сайта.",
   "permissions": [
     "storage",
     "unlimitedStorage",

@@ -7,6 +7,7 @@ const DEFAULT_BLOCK_LAYOUT = [
   { id: "favorites", label: "★ Избранные запросы", enabled: true },
   { id: "frequent", label: "🔥 Частые теги (из вашего поиска)", enabled: true },
   { id: "history", label: "🕒 История поиска", enabled: true },
+  { id: "autocomplete", label: "💡 Подсказки по вводу (автодополнение)", enabled: false },
   { id: "capsules", label: "💊 Капсулы слов текущего запроса", enabled: false },
   { id: "operators", label: "🛠 Кнопки операторов и рубрик сайта", enabled: false },
   { id: "catalog", label: "📚 Вкладки категорий и база тегов", enabled: false }
